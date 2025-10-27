@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Navbars from '../components/Navbars';
+import ConfirmationPopup from '../components/ConfirmationPopup';
 
 interface Department {
   id: string;
@@ -26,6 +27,18 @@ interface MaintenanceRequest {
   requestedBy: string;
   date: string;
   status: 'pending' | 'approved' | 'rejected' | 'completed';
+}
+
+// Define types for requisition (same as in Requisitions page)
+interface Requisition {
+  id: string;
+  requestId: string;
+  requestedBy: string;
+  item: string;
+  quantity: number;
+  department: string;
+  dateRequested: string;
+  status: 'Pending' | 'Approved' | 'Rejected' | 'Completed';
 }
 
 const Departments: React.FC = () => {
@@ -118,7 +131,7 @@ const Departments: React.FC = () => {
   });
 
   // State for maintenance requests
-  const [maintenanceRequests, setMaintenanceRequests] = useState<MaintenanceRequest[]>([
+  const [maintenanceRequests] = useState<MaintenanceRequest[]>([
     {
       id: '#00000',
       department: 'Housekeeping',
@@ -161,12 +174,67 @@ const Departments: React.FC = () => {
     }
   ]);
 
+  // State for requisitions (same as in Requisitions page)
+  const [requisitions, setRequisitions] = useState<Requisition[]>([
+    {
+      id: '1',
+      requestId: 'REQ-00123',
+      requestedBy: 'Maria Dela Cruz',
+      item: 'Bath Towels',
+      quantity: 450,
+      department: 'Housekeeping',
+      dateRequested: '2025-09-10',
+      status: 'Pending'
+    },
+    {
+      id: '2',
+      requestId: 'REQ-00124',
+      requestedBy: 'John Santos',
+      item: 'Key Cards',
+      quantity: 80,
+      department: 'Front Desk',
+      dateRequested: '2025-09-11',
+      status: 'Approved'
+    },
+    {
+      id: '3',
+      requestId: 'REQ-00125',
+      requestedBy: 'Chef Mateo',
+      item: 'Wine Glasses',
+      quantity: 0,
+      department: 'Restaurant',
+      dateRequested: '2025-09-12',
+      status: 'Rejected'
+    },
+    {
+      id: '4',
+      requestId: 'REQ-00126',
+      requestedBy: 'Alex Cruz',
+      item: 'Soap',
+      quantity: 1200,
+      department: 'Guest Amenities',
+      dateRequested: '2025-09-13',
+      status: 'Completed'
+    }
+  ]);
+
   // State for popups
   const [showAddDepartment, setShowAddDepartment] = useState(false);
   const [showViewDepartment, setShowViewDepartment] = useState(false);
+  const [showViewRequests, setShowViewRequests] = useState(false);
   const [showAddItem, setShowAddItem] = useState(false);
   const [showUpdateItem, setShowUpdateItem] = useState(false);
   const [showDeleteItem, setShowDeleteItem] = useState(false);
+  const [showUpdateRequisition, setShowUpdateRequisition] = useState(false);
+  const [showDeleteRequisition, setShowDeleteRequisition] = useState(false);
+  const [showEditDepartment, setShowEditDepartment] = useState(false);
+
+  // State for confirmation popups
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [showDeletePopup, setShowDeletePopup] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [deleteMessage, setDeleteMessage] = useState('');
+  const [deleteCallback, setDeleteCallback] = useState<() => void>(() => {});
 
   // State for forms
   const [departmentForm, setDepartmentForm] = useState({
@@ -175,6 +243,17 @@ const Departments: React.FC = () => {
     managerName: '',
     categories: ''
   });
+
+  const [editDepartmentForm, setEditDepartmentForm] = useState({ // Add this block
+  id: '',
+  name: '',
+  manager: '',
+  itemsAssigned: 0,
+  totalUsage: '',
+  monthlyConsumption: 0,
+  requests: 0,
+  categories: ''
+});
 
   const [itemForm, setItemForm] = useState({
     itemCode: '',
@@ -192,10 +271,21 @@ const Departments: React.FC = () => {
     quantity: ''
   });
 
+  const [updateRequisitionForm, setUpdateRequisitionForm] = useState({
+    requestedBy: '',
+    item: '',
+    quantity: '',
+    department: '',
+    dateRequested: '',
+    status: ''
+  });
+
   // State for current selections
   const [currentDepartment, setCurrentDepartment] = useState<string>('');
   const [currentEditingIndex, setCurrentEditingIndex] = useState<number>(-1);
   const [currentDeletingIndex, setCurrentDeletingIndex] = useState<number>(-1);
+  const [editingRequisition, setEditingRequisition] = useState<Requisition | null>(null);
+  const [deletingRequisition, setDeletingRequisition] = useState<Requisition | null>(null);
 
   // Filter states
   const [departmentFilter, setDepartmentFilter] = useState('All Departments');
@@ -206,6 +296,10 @@ const Departments: React.FC = () => {
   const openViewDepartmentPopup = (deptName: string) => {
     setCurrentDepartment(deptName);
     setShowViewDepartment(true);
+  };
+  const openViewRequestsPopup = (deptName: string) => {
+    setCurrentDepartment(deptName);
+    setShowViewRequests(true);
   };
   const openAddItemPopup = () => setShowAddItem(true);
   const openUpdateItemPopup = (index: number) => {
@@ -222,16 +316,54 @@ const Departments: React.FC = () => {
   };
   const openDeleteItemPopup = (index: number) => {
     setCurrentDeletingIndex(index);
-    setShowDeleteItem(true);
+    const item = departmentItems[currentDepartment][index];
+    setDeleteMessage(`Are you sure you want to delete ${item.name}?`);
+    setDeleteCallback(() => deleteDepartmentItem);
+    setShowDeletePopup(true);
   };
+  const openUpdateRequisitionPopup = (requisition: Requisition) => {
+    setEditingRequisition(requisition);
+    setUpdateRequisitionForm({
+      requestedBy: requisition.requestedBy,
+      item: requisition.item,
+      quantity: requisition.quantity.toString(),
+      department: requisition.department,
+      dateRequested: requisition.dateRequested,
+      status: requisition.status
+    });
+    setShowUpdateRequisition(true);
+  };
+  const openDeleteRequisitionPopup = (requisition: Requisition) => {
+    setDeletingRequisition(requisition);
+    setDeleteMessage(`Are you sure you want to delete request ${requisition.requestId}?`);
+    setDeleteCallback(() => deleteRequisition);
+    setShowDeletePopup(true);
+  };
+  const openEditDepartmentPopup = (dept: Department) => {
+  setEditDepartmentForm({
+    id: dept.id,
+    name: dept.name,
+    manager: dept.manager,
+    itemsAssigned: dept.itemsAssigned,
+    totalUsage: dept.totalUsage,
+    monthlyConsumption: dept.monthlyConsumption,
+    requests: dept.requests,
+    categories: ''
+  });
+  setShowEditDepartment(true);
+};
 
   // Close popup functions
   const closeAllPopups = () => {
     setShowAddDepartment(false);
     setShowViewDepartment(false);
+    setShowViewRequests(false);
     setShowAddItem(false);
     setShowUpdateItem(false);
     setShowDeleteItem(false);
+    setShowUpdateRequisition(false);
+    setShowDeleteRequisition(false);
+    setShowEditDepartment(false);
     resetForms();
   };
 
@@ -240,12 +372,15 @@ const Departments: React.FC = () => {
     setDepartmentForm({ deptId: '', deptName: '', managerName: '', categories: '' });
     setItemForm({ itemCode: '', itemName: '', category: '', status: '', quantity: '' });
     setUpdateItemForm({ itemCode: '', itemName: '', category: '', status: '', quantity: '' });
+    setUpdateRequisitionForm({ requestedBy: '', item: '', quantity: '', department: '', dateRequested: '', status: '' });
     setCurrentEditingIndex(-1);
     setCurrentDeletingIndex(-1);
+    setEditingRequisition(null);
+    setDeletingRequisition(null);
   };
 
-  // Handle form changes
-  const handleDepartmentFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+ // Handle form changes
+  const handleDepartmentFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setDepartmentForm({ ...departmentForm, [e.target.name]: e.target.value });
   };
 
@@ -257,15 +392,46 @@ const Departments: React.FC = () => {
     setUpdateItemForm({ ...updateItemForm, [e.target.name]: e.target.value });
   };
 
+  const handleUpdateRequisitionFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setUpdateRequisitionForm({ ...updateRequisitionForm, [e.target.name]: e.target.value });
+  };
+
+  // Add this function with your other handlers
+  const editDepartment = () => {
+    if (!editDepartmentForm.name || !editDepartmentForm.manager || !editDepartmentForm.categories) {
+      return;
+    }
+
+    const updatedDepartments = departments.map(dept =>
+      dept.id === editDepartmentForm.id ? { ...editDepartmentForm } : dept
+    );
+
+    setDepartments(updatedDepartments);
+    closeAllPopups();
+    setSuccessMessage('Department Successfully Updated');
+    setShowSuccessPopup(true);
+  };
+
+  // Add this with your other form change handlers
+  const handleEditDepartmentFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setEditDepartmentForm(prev => ({
+      ...prev,
+      [name]: name === 'monthlyConsumption' || name === 'itemsAssigned' || name === 'requests' 
+        ? parseInt(value) || 0 
+        : value
+    }));
+  };
+
   // Add new department
   const addDepartment = () => {
-    if (!departmentForm.deptId || !departmentForm.deptName || !departmentForm.managerName) {
+    if (!departmentForm.deptName || !departmentForm.managerName || !departmentForm.categories) {
       alert('Please fill in all required fields');
       return;
     }
 
     const newDepartment: Department = {
-      id: departmentForm.deptId,
+      id: `DEPT${String(departments.length + 1).padStart(3, '0')}`, // Auto-generate ID
       name: departmentForm.deptName,
       manager: departmentForm.managerName,
       itemsAssigned: 0,
@@ -277,7 +443,8 @@ const Departments: React.FC = () => {
     setDepartments([...departments, newDepartment]);
     setDepartmentItems({ ...departmentItems, [departmentForm.deptName]: [] });
     closeAllPopups();
-    alert('Department added successfully!');
+    setSuccessMessage('Department Successfully Added');
+    setShowSuccessPopup(true);
   };
 
   // Add item to department
@@ -307,7 +474,8 @@ const Departments: React.FC = () => {
     setDepartments(updatedDepartments);
 
     closeAllPopups();
-    alert('Item added successfully!');
+    setSuccessMessage('Item Successfully Added to Department');
+    setShowSuccessPopup(true);
   };
 
   // Update department item
@@ -332,7 +500,8 @@ const Departments: React.FC = () => {
     setDepartmentItems({ ...departmentItems, [currentDepartment]: updatedItems });
 
     closeAllPopups();
-    alert('Item updated successfully!');
+    setSuccessMessage('Item Successfully Updated');
+    setShowSuccessPopup(true);
   };
 
   // Delete department item
@@ -351,15 +520,69 @@ const Departments: React.FC = () => {
     setDepartments(updatedDepartments);
 
     closeAllPopups();
-    alert('Item deleted successfully!');
+    setShowDeletePopup(false);
+    setSuccessMessage('Item Successfully Deleted');
+    setShowSuccessPopup(true);
   };
 
-  // Get status badge class
+  // Update requisition
+  const updateRequisition = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!editingRequisition) return;
+
+    const updatedRequisition: Requisition = {
+      ...editingRequisition,
+      requestedBy: updateRequisitionForm.requestedBy,
+      item: updateRequisitionForm.item,
+      quantity: parseInt(updateRequisitionForm.quantity),
+      department: updateRequisitionForm.department,
+      dateRequested: updateRequisitionForm.dateRequested,
+      status: updateRequisitionForm.status as 'Pending' | 'Approved' | 'Rejected' | 'Completed'
+    };
+
+    const updatedRequisitions = requisitions.map(req =>
+      req.id === editingRequisition.id ? updatedRequisition : req
+    );
+
+    setRequisitions(updatedRequisitions);
+    closeAllPopups();
+    setSuccessMessage('Request Successfully Updated');
+    setShowSuccessPopup(true);
+  };
+
+  // Delete requisition
+  const deleteRequisition = () => {
+    if (!deletingRequisition) return;
+
+    const filteredRequisitions = requisitions.filter(
+      req => req.id !== deletingRequisition.id
+    );
+
+    setRequisitions(filteredRequisitions);
+    closeAllPopups();
+    setShowDeletePopup(false);
+    setSuccessMessage('Request Successfully Deleted');
+    setShowSuccessPopup(true);
+  };
+
+  // Get status badge class for items
   const getStatusClass = (status: string) => {
     if (status.includes('In Stock')) return 'bg-green-100 text-green-800';
     if (status.includes('Low Stock')) return 'bg-yellow-100 text-yellow-800';
     if (status.includes('Out of Stock')) return 'bg-red-100 text-red-800';
     return 'bg-gray-100 text-gray-800';
+  };
+
+  // Get status badge class for requisitions
+  const getRequisitionStatusClass = (status: string) => {
+    switch (status) {
+      case 'Pending': return 'bg-orange-100 text-orange-600';
+      case 'Approved': return 'bg-green-100 text-green-600';
+      case 'Rejected': return 'bg-red-100 text-red-600';
+      case 'Completed': return 'bg-blue-100 text-blue-600';
+      default: return 'bg-gray-100 text-gray-600';
+    }
   };
 
   // Get maintenance status class
@@ -380,6 +603,11 @@ const Departments: React.FC = () => {
                          request.department.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesDepartment && matchesSearch;
   });
+
+  // Filter requisitions by current department
+  const filteredRequisitions = requisitions.filter(req => 
+    req.department === currentDepartment
+  );
 
   return (
     <div className="min-h-screen bg-[#FBF0E4]">
@@ -413,7 +641,7 @@ const Departments: React.FC = () => {
             {departments.map((dept, index) => (
               <div key={index} className="bg-white rounded-2xl shadow-sm overflow-hidden hover:shadow-md transition-all duration-300">
                 {/* Department Header */}
-                <div className="bg-[#82A33D] p-5">
+                <div className="bg-[#889D65] p-5">
                   <h2 className="text-lg font-bold text-white mb-1">{dept.name}</h2>
                   <p className="text-white text-sm opacity-95">
                     Manager: <span className="font-semibold">{dept.manager}</span>
@@ -456,10 +684,16 @@ const Departments: React.FC = () => {
                   >
                     View Items
                   </button>
-                  <button className="flex-1 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 text-xs font-semibold uppercase tracking-wide hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-all duration-300 cursor-pointer">
-                    Request ({dept.requests})
+                    <button 
+                    onClick={() => openViewRequestsPopup(dept.name)}
+                    className="flex-1 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 text-xs font-semibold uppercase tracking-wide hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-all duration-300 cursor-pointer"
+                  >
+                    Requests ({dept.requests})
                   </button>
-                  <button className="flex-1 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 text-xs font-semibold uppercase tracking-wide hover:bg-gray-600 hover:text-white hover:border-gray-600 transition-all duration-300 cursor-pointer">
+                  <button 
+                    onClick={() => openEditDepartmentPopup(dept)} // Updated this line
+                    className="flex-1 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 text-xs font-semibold uppercase tracking-wide hover:bg-gray-600 hover:text-white hover:border-gray-600 transition-all duration-300 cursor-pointer"
+                  >
                     Edit
                   </button>
                 </div>
@@ -538,80 +772,103 @@ const Departments: React.FC = () => {
 
       {/* Add Department Popup */}
       {showAddDepartment && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl w-full max-w-md mx-4 shadow-xl">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center text-xl">
-                    🏢
-                  </div>
-                  <h2 className="text-xl font-bold text-gray-800">Add New Department</h2>
-                </div>
-                <button 
-                  onClick={closeAllPopups}
-                  className="w-8 h-8 border border-[#82A33D] text-[#82A33D] rounded-lg flex items-center justify-center hover:bg-[#82A33D] hover:text-white transition-colors cursor-pointer"
+        <PopupModal
+          title="Add New Department"
+          icon="add"
+          onClose={closeAllPopups}
+          actions={
+            <>
+              <button
+                onClick={closeAllPopups}
+                className="flex-1 py-3 border border-[#82A33D] text-[#82A33D] rounded-lg font-semibold hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                CANCEL
+              </button>
+              <button
+                onClick={addDepartment}
+                className="flex-1 py-3 bg-[#82A33D] text-white rounded-lg font-semibold hover:bg-[#6d8930] transition-colors cursor-pointer"
+              >
+                ADD
+              </button>
+            </>
+          }
+        >
+          <div className="space-y-4">
+            <div className="flex gap-3">
+              <div className="w-1/3">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Department ID <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="deptId"
+                  value={`DEPT${String(departments.length + 1).padStart(3, '0')}`}
+                  disabled
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed"
+                />
+              </div>
+              <div className="w-2/3">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Department Name <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="deptName"
+                  value={departmentForm.deptName}
+                  onChange={(e) => setDepartmentForm({...departmentForm, deptName: e.target.value})}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#82A33D] focus:border-transparent cursor-pointer"
+                  required
                 >
-                  ×
-                </button>
+                  <option value="">Select Department</option>
+                  <option value="Housekeeping">Housekeeping</option>
+                  <option value="Maintenance">Maintenance</option>
+                  <option value="Food & Beverages">Food & Beverages</option>
+                  <option value="Front Desk">Front Desk</option>
+                  <option value="Restaurant">Restaurant</option>
+                  <option value="Engineering">Engineering</option>
+                  <option value="Finance">Finance</option>
+                </select>
               </div>
             </div>
-
-            <div className="p-6">
-              <div className="space-y-4">
-                <div className="flex gap-3">
-                  <input
-                    type="text"
-                    name="deptId"
-                    value={departmentForm.deptId}
-                    onChange={handleDepartmentFormChange}
-                    placeholder="Department ID"
-                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#82A33D] focus:border-transparent"
-                  />
-                  <input
-                    type="text"
-                    name="deptName"
-                    value={departmentForm.deptName}
-                    onChange={handleDepartmentFormChange}
-                    placeholder="Department Name"
-                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#82A33D] focus:border-transparent"
-                  />
-                </div>
-                <input
-                  type="text"
-                  name="managerName"
-                  value={departmentForm.managerName}
-                  onChange={handleDepartmentFormChange}
-                  placeholder="Manager Name"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#82A33D] focus:border-transparent"
-                />
-                <input
-                  type="text"
-                  name="categories"
-                  value={departmentForm.categories}
-                  onChange={handleDepartmentFormChange}
-                  placeholder="Categories"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#82A33D] focus:border-transparent"
-                />
-              </div>
-
-              <div className="flex gap-3 mt-6 pt-6 border-t border-gray-200">
-                <button
-                  onClick={closeAllPopups}
-                  className="flex-1 py-3 border border-[#82A33D] text-[#82A33D] rounded-lg font-semibold hover:bg-gray-50 transition-colors cursor-pointer"
-                >
-                  CANCEL
-                </button>
-                <button
-                  onClick={addDepartment}
-                  className="flex-1 py-3 bg-[#82A33D] text-white rounded-lg font-semibold hover:bg-[#6d8930] transition-colors cursor-pointer"
-                >
-                  ADD
-                </button>
-              </div>
+            
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Manager Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="managerName"
+                value={departmentForm.managerName}
+                onChange={handleDepartmentFormChange}
+                placeholder="Enter manager name"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#82A33D] focus:border-transparent"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Categories <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="categories"
+                value={departmentForm.categories}
+                onChange={(e) => setDepartmentForm({...departmentForm, categories: e.target.value})}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#82A33D] focus:border-transparent cursor-pointer"
+                required
+              >
+                <option value="">Select Category</option>
+                <option value="Operations">Operations</option>
+                <option value="Guest Services">Guest Services</option>
+                <option value="Food & Beverage">Food & Beverage</option>
+                <option value="Housekeeping">Housekeeping</option>
+                <option value="Maintenance">Maintenance</option>
+                <option value="Security">Security</option>
+                <option value="Administrative">Administrative</option>
+                <option value="Support Services">Support Services</option>
+              </select>
             </div>
           </div>
-        </div>
+        </PopupModal>
       )}
 
       {/* View Department Items Popup */}
@@ -710,6 +967,116 @@ const Departments: React.FC = () => {
                               src="/src/assets/icons/delete.png" 
                               alt="Delete" 
                               className="w-4 h-4 object-contain"
+                            />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Requests Popup */}
+      {showViewRequests && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl w-full max-w-6xl mx-4 shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex justify-between items-start mb-4">
+                <button 
+                  onClick={closeAllPopups}
+                  className="flex items-center gap-2 text-gray-600 hover:text-[#889D65] transition-colors cursor-pointer"
+                >
+                  ← Back
+                </button>
+                <button 
+                  className="flex items-center gap-2 px-4 py-2 border border-[#889D65] text-gray-800 rounded-lg hover:bg-[#889D65] hover:text-white transition-colors cursor-pointer"
+                >
+                  <div className="w-4 h-4 bg-[#889D65] rounded-full flex items-center justify-center">
+                    <img 
+                      src="/src/assets/icons/add.png" 
+                      alt="Add" 
+                      className="w-2 h-2 object-contain"
+                    />
+                  </div>
+                  Add New Request
+                </button>
+              </div>
+
+              <div className="flex justify-between items-start mt-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-800 mb-1">{currentDepartment} - Requests</h2>
+                  <p className="text-gray-600">
+                    Manager: <span className="text-[#889D65] font-semibold">
+                      {departments.find(d => d.name === currentDepartment)?.manager}
+                    </span>
+                  </p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <input 
+                    type="text" 
+                    placeholder="Search Request..." 
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#82A33D] focus:border-transparent"
+                  />
+                  <div className="text-sm text-gray-700">
+                    <strong>Total Requests: </strong>
+                    <span className="text-[#889D65] font-semibold">
+                      {filteredRequisitions.length}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-auto p-6">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">Request ID</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">Requested By</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">Item</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">Quantity</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">Date Requested</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">Status</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredRequisitions.map((requisition) => (
+                    <tr key={requisition.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 border-b border-gray-100">{requisition.requestId}</td>
+                      <td className="px-4 py-3 border-b border-gray-100">{requisition.requestedBy}</td>
+                      <td className="px-4 py-3 border-b border-gray-100">{requisition.item}</td>
+                      <td className="px-4 py-3 border-b border-gray-100">{requisition.quantity.toLocaleString()}</td>
+                      <td className="px-4 py-3 border-b border-gray-100">{requisition.dateRequested}</td>
+                      <td className="px-4 py-3 border-b border-gray-100">
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getRequisitionStatusClass(requisition.status)}`}>
+                          {requisition.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 border-b border-gray-100">
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => openUpdateRequisitionPopup(requisition)}
+                            className="p-1 hover:bg-gray-100 rounded transition-colors cursor-pointer"
+                          >
+                            <img 
+                              src="/src/assets/icons/edit.png" 
+                              alt="Edit" 
+                              className="w-4 h-4"
+                            />
+                          </button>
+                          <button 
+                            onClick={() => openDeleteRequisitionPopup(requisition)}
+                            className="p-1 hover:bg-gray-100 rounded transition-colors cursor-pointer"
+                          >
+                            <img 
+                              src="/src/assets/icons/delete.png" 
+                              alt="Delete" 
+                              className="w-4 h-4"
                             />
                           </button>
                         </div>
@@ -921,6 +1288,300 @@ const Departments: React.FC = () => {
           </div>
         </PopupModal>
       )}
+
+      {/* Update Requisition Popup */}
+      {showUpdateRequisition && editingRequisition && (
+        <PopupModal
+          title="Update Request"
+          icon="edit"
+          onClose={closeAllPopups}
+          actions={
+            <>
+              <button
+                onClick={closeAllPopups}
+                className="flex-1 py-3 border border-[#82A33D] text-[#82A33D] rounded-lg font-semibold hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                CANCEL
+              </button>
+              <button
+                onClick={updateRequisition}
+                className="flex-1 py-3 bg-[#82A33D] text-white rounded-lg font-semibold hover:bg-[#6d8930] transition-colors cursor-pointer"
+              >
+                UPDATE
+              </button>
+            </>
+          }
+        >
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Request ID</label>
+                <input
+                  type="text"
+                  value={editingRequisition.requestId}
+                  disabled
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Date Requested</label>
+                <input
+                  type="date"
+                  name="dateRequested"
+                  value={updateRequisitionForm.dateRequested}
+                  onChange={handleUpdateRequisitionFormChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#82A33D] focus:border-transparent"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Requested By</label>
+              <input
+                type="text"
+                name="requestedBy"
+                value={updateRequisitionForm.requestedBy}
+                onChange={handleUpdateRequisitionFormChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#82A33D] focus:border-transparent"
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Item</label>
+                <input
+                  type="text"
+                  name="item"
+                  value={updateRequisitionForm.item}
+                  onChange={handleUpdateRequisitionFormChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#82A33D] focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Quantity</label>
+                <input
+                  type="number"
+                  name="quantity"
+                  value={updateRequisitionForm.quantity}
+                  onChange={handleUpdateRequisitionFormChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#82A33D] focus:border-transparent"
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Department</label>
+                <select
+                  name="department"
+                  value={updateRequisitionForm.department}
+                  onChange={handleUpdateRequisitionFormChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#82A33D] focus:border-transparent cursor-pointer"
+                >
+                  <option value="Housekeeping">Housekeeping</option>
+                  <option value="Front Desk">Front Desk</option>
+                  <option value="Restaurant">Restaurant</option>
+                  <option value="Guest Amenities">Guest Amenities</option>
+                  <option value="Maintenance">Maintenance</option>
+                  <option value="Kitchen">Kitchen</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+                <select
+                  name="status"
+                  value={updateRequisitionForm.status}
+                  onChange={handleUpdateRequisitionFormChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#82A33D] focus:border-transparent cursor-pointer"
+                >
+                  <option value="Pending">Pending</option>
+                  <option value="Approved">Approved</option>
+                  <option value="Rejected">Rejected</option>
+                  <option value="Completed">Completed</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </PopupModal>
+      )}
+
+      {/* Delete Requisition Popup */}
+      {showDeleteRequisition && deletingRequisition && (
+        <PopupModal
+          title="Delete Confirmation"
+          icon="delete"
+          onClose={closeAllPopups}
+          actions={
+            <>
+              <button
+                onClick={closeAllPopups}
+                className="flex-1 py-3 border border-[#82A33D] text-[#82A33D] rounded-lg font-semibold hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                CANCEL
+              </button>
+              <button
+                onClick={deleteRequisition}
+                className="flex-1 py-3 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition-colors cursor-pointer"
+              >
+                CONFIRM
+              </button>
+            </>
+          }
+        >
+          <div className="text-center py-4">
+            <p className="text-gray-700">
+              Are you sure you want to delete request <strong>{deletingRequisition.requestId}</strong>?
+            </p>
+          </div>
+        </PopupModal>
+      )}
+
+      {/* Edit Department Popup */}
+      {showEditDepartment && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl w-full max-w-md mx-4 shadow-xl">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                    <img src="/src/assets/icons/edit.png" alt="Edit" className="w-5 h-5 object-contain" />
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-800">Edit Department</h2>
+                </div>
+                <button 
+                  onClick={closeAllPopups}
+                  className="w-8 h-8 border border-[#82A33D] text-[#82A33D] rounded-lg flex items-center justify-center hover:bg-[#82A33D] hover:text-white transition-colors cursor-pointer"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <div className="space-y-4">
+                <div className="flex gap-3">
+                  <div className="w-1/3">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Department ID</label>
+                    <input
+                      type="text"
+                      value={editDepartmentForm.id}
+                      disabled
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed"
+                    />
+                  </div>
+                  <div className="w-2/3">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Department Name <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      name="name"
+                      value={editDepartmentForm.name}
+                      onChange={(e) => setEditDepartmentForm({...editDepartmentForm, name: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#82A33D] focus:border-transparent cursor-pointer"
+                      required
+                    >
+                      <option value="">Select Department</option>
+                      <option value="Housekeeping">Housekeeping</option>
+                      <option value="Maintenance">Maintenance</option>
+                      <option value="Laundry Services">Laundry Services</option>
+                      <option value="Food & Beverages">Food & Beverages</option>
+                      <option value="Security">Security</option>
+                      <option value="Front Desk">Front Desk</option>
+                      <option value="Guest Services">Guest Services</option>
+                      <option value="Kitchen">Kitchen</option>
+                      <option value="Restaurant">Restaurant</option>
+                      <option value="Banquet">Banquet</option>
+                      <option value="Engineering">Engineering</option>
+                      <option value="IT Department">IT Department</option>
+                      <option value="Human Resources">Human Resources</option>
+                      <option value="Finance">Finance</option>
+                      <option value="Sales & Marketing">Sales & Marketing</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Manager Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="manager"
+                    value={editDepartmentForm.manager}
+                    onChange={handleEditDepartmentFormChange}
+                    placeholder="Enter manager name"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#82A33D] focus:border-transparent"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Categories <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="categories"
+                    value={editDepartmentForm.categories}
+                    onChange={(e) => setEditDepartmentForm({...editDepartmentForm, categories: e.target.value})}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#82A33D] focus:border-transparent cursor-pointer"
+                    required
+                  >
+                    <option value="">Select Category</option>
+                    <option value="Operations">Operations</option>
+                    <option value="Guest Services">Guest Services</option>
+                    <option value="Food & Beverage">Food & Beverage</option>
+                    <option value="Housekeeping">Housekeeping</option>
+                    <option value="Maintenance">Maintenance</option>
+                    <option value="Security">Security</option>
+                    <option value="Administrative">Administrative</option>
+                    <option value="Support Services">Support Services</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6 pt-6 border-t border-gray-200">
+                <button
+                  onClick={closeAllPopups}
+                  className="flex-1 py-3 border border-[#82A33D] text-[#82A33D] rounded-lg font-semibold hover:bg-gray-50 transition-colors cursor-pointer"
+                >
+                  CANCEL
+                </button>
+                <button
+                  onClick={editDepartment}
+                  className="flex-1 py-3 bg-[#82A33D] text-white rounded-lg font-semibold hover:bg-[#6d8930] transition-colors cursor-pointer"
+                >
+                  UPDATE
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Confirmation Popup */}
+      <ConfirmationPopup
+        isOpen={showSuccessPopup}
+        onClose={() => setShowSuccessPopup(false)}
+        title="Success"
+        message={successMessage}
+        type="success"
+        showCancelButton={false}
+        showConfirmButton={false}
+      />
+
+      {/* Delete Confirmation Popup */}
+      <ConfirmationPopup
+        isOpen={showDeletePopup}
+        onClose={() => setShowDeletePopup(false)}
+        onConfirm={deleteCallback}
+        title="Delete Confirmation"
+        message={deleteMessage}
+        type="delete"
+        confirmText="DELETE"
+        cancelText="CANCEL"
+        showConfirmButton={true}
+        showCancelButton={true}
+      />
     </div>
   );
 };
@@ -951,7 +1612,7 @@ const PopupModal: React.FC<PopupModalProps> = ({ title, icon, onClose, actions, 
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
-                <img src={getIcon()} alt={title} className="w-5 h-5 object-contain" />
+                <img src={getIcon()} alt={title} className="w-5 h-5 object-contain invert" />
               </div>
               <h2 className="text-xl font-bold text-gray-800">{title}</h2>
             </div>

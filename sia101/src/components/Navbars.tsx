@@ -29,7 +29,7 @@ const Navbars = () => {
   return (
     <>
       {/* Header */}
-      <header className="bg-white py-3 px-5 flex justify-between items-center shadow-md fixed top-0 left-0 w-full z-50 h-16">
+     <header className="bg-white py-3 px-5 flex justify-between items-center shadow-md fixed top-0 left-0 w-full z-50 h-16">
         <div className="flex items-center gap-2">
           <div className="w-10 h-10 bg-[#8bc34a] rounded-full flex items-center justify-center overflow-hidden">
             <img 
@@ -39,9 +39,9 @@ const Navbars = () => {
             />
           </div>
           <div>
-            <h1 className="text-[#82A33D] text-lg font-['Merienda_One']">Balay</h1>
-            <p className="text-[#CFD098] text-xs font-['Merienda_One']">ginhawa</p>
-          </div>
+            <h1 className="text-[#82A33D] text-xl font-['Great_Vibes'] leading-none tracking-wide">Balay</h1>
+            <p className="text-[#CFD098] text-xl font-['Great_Vibes'] leading-none tracking-wide -mt-2">ginhawa</p>
+          </div>  
         </div>
         
         <div className="flex items-center gap-11">
@@ -71,7 +71,7 @@ const Navbars = () => {
       {/* Sidebar */}
       <nav className="bg-white w-64 h-full py-5 border-r border-[#E5E5E5] fixed left-0 top-16 z-40">
         <div className="text-center px-5 pb-5 mb-1">
-          <h3 className="text-[#889D65] font-bold text-2xl tracking-wide mb-1">INVENTORY</h3>
+          <h3 className="text-[#889D65] font-bold text-3xl tracking-wide mb-1">INVENTORY</h3>
           {/* Line under INVENTORY text */}
           <div className="h-0.5 bg-[#E5E5E5] mt-3 mx-0"></div>
         </div>

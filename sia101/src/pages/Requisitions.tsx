@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Navbars from '../components/Navbars';
+import ConfirmationPopup from '../components/ConfirmationPopup';
 
 // Define types for requisition
 interface Requisition {
@@ -58,8 +59,12 @@ const Requisitions: React.FC = () => {
     }
   ]);
 
-  // State for popup
+  // State for popups
   const [showAddPopup, setShowAddPopup] = useState(false);
+  const [showUpdatePopup, setShowUpdatePopup] = useState(false);
+  const [showDeletePopup, setShowDeletePopup] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   // State for form data
   const [newRequest, setNewRequest] = useState({
@@ -71,13 +76,16 @@ const Requisitions: React.FC = () => {
     status: 'Pending' as 'Pending' | 'Approved' | 'Rejected' | 'Completed'
   });
 
+  // State for editing and deleting
+  const [editingRequisition, setEditingRequisition] = useState<Requisition | null>(null);
+  const [deletingRequisition, setDeletingRequisition] = useState<Requisition | null>(null);
+
   // Request counter
   const [requestCounter, setRequestCounter] = useState(127);
 
   // Popup functions
   const openAddPopup = () => {
     setShowAddPopup(true);
-    // Set today's date
     setNewRequest(prev => ({
       ...prev,
       dateRequested: new Date().toISOString().split('T')[0]
@@ -96,7 +104,32 @@ const Requisitions: React.FC = () => {
     });
   };
 
-  // Form handler
+  const openUpdatePopup = (requisition: Requisition) => {
+    setEditingRequisition(requisition);
+    setShowUpdatePopup(true);
+  };
+
+  const closeUpdatePopup = () => {
+    setShowUpdatePopup(false);
+    setEditingRequisition(null);
+  };
+
+  const openDeletePopup = (requisition: Requisition) => {
+    setDeletingRequisition(requisition);
+    setShowDeletePopup(true);
+  };
+
+  const closeDeletePopup = () => {
+    setShowDeletePopup(false);
+    setDeletingRequisition(null);
+  };
+
+  const closeSuccessPopup = () => {
+    setShowSuccessPopup(false);
+    setSuccessMessage('');
+  };
+
+  // Form handlers
   const handleAddRequest = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -119,26 +152,36 @@ const Requisitions: React.FC = () => {
     setRequisitions([newRequisition, ...requisitions]);
     setRequestCounter(prev => prev + 1);
     closeAddPopup();
-    alert('New request added successfully!');
+    setSuccessMessage('Request Successfully Added');
+    setShowSuccessPopup(true);
   };
 
-  // Action functions
-  const approveRequest = (id: string) => {
+  const handleUpdateRequest = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!editingRequisition) return;
+
     const updatedRequisitions = requisitions.map(req =>
-      req.id === id ? { ...req, status: 'Approved' as const } : req
+      req.id === editingRequisition.id ? editingRequisition : req
     );
+
     setRequisitions(updatedRequisitions);
-    alert('Request approved successfully!');
+    closeUpdatePopup();
+    setSuccessMessage('Request Successfully Updated');
+    setShowSuccessPopup(true);
   };
 
-  const rejectRequest = (id: string) => {
-    if (window.confirm('Are you sure you want to reject this request?')) {
-      const updatedRequisitions = requisitions.map(req =>
-        req.id === id ? { ...req, status: 'Rejected' as const } : req
-      );
-      setRequisitions(updatedRequisitions);
-      alert('Request rejected successfully!');
-    }
+  const handleDeleteRequest = () => {
+    if (!deletingRequisition) return;
+
+    const filteredRequisitions = requisitions.filter(
+      req => req.id !== deletingRequisition.id
+    );
+
+    setRequisitions(filteredRequisitions);
+    closeDeletePopup();
+    setSuccessMessage('Request Successfully Deleted');
+    setShowSuccessPopup(true);
   };
 
   // Status badge styling
@@ -229,24 +272,22 @@ const Requisitions: React.FC = () => {
                     <td className="px-4 py-3 border-b border-gray-100">
                       <div className="flex gap-2">
                         <button 
-                          onClick={() => approveRequest(requisition.id)}
-                          disabled={requisition.status === 'Approved'}
-                          className="p-1 hover:bg-gray-100 rounded transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                          onClick={() => openUpdatePopup(requisition)}
+                          className="p-1 hover:bg-gray-100 rounded transition-colors cursor-pointer"
                         >
                           <img 
-                            src="/src/assets/icons/approve.png" 
-                            alt="Approve" 
+                            src="/src/assets/icons/edit.png" 
+                            alt="Edit" 
                             className="w-4 h-4"
                           />
                         </button>
                         <button 
-                          onClick={() => rejectRequest(requisition.id)}
-                          disabled={requisition.status === 'Rejected'}
-                          className="p-1 hover:bg-gray-100 rounded transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                          onClick={() => openDeletePopup(requisition)}
+                          className="p-1 hover:bg-gray-100 rounded transition-colors cursor-pointer"
                         >
                           <img 
-                            src="/src/assets/icons/reject.png" 
-                            alt="Reject" 
+                            src="/src/assets/icons/delete.png" 
+                            alt="Delete" 
                             className="w-4 h-4"
                           />
                         </button>
@@ -404,6 +445,163 @@ const Requisitions: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Update Requisition Popup */}
+        {showUpdatePopup && editingRequisition && (
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl w-full max-w-md mx-4 shadow-xl">
+              <div className="flex justify-between items-center p-6 border-b border-gray-200">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                    <img src="/src/assets/icons/edit.png" alt="Edit" className="w-6 h-6" />
+                  </div>
+                  <h2 className="text-xl font-semibold">Update Request</h2>
+                </div>
+                <button 
+                  onClick={closeUpdatePopup}
+                  className="w-8 h-8 border border-[#82A33D] text-[#82A33D] rounded-lg hover:bg-[#82A33D] hover:text-white transition-colors cursor-pointer"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <form onSubmit={handleUpdateRequest} className="p-6">
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Request ID
+                    </label>
+                    <input
+                      type="text"
+                      value={editingRequisition.requestId}
+                      disabled
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Date
+                    </label>
+                    <input
+                      type="date"
+                      value={editingRequisition.dateRequested}
+                      onChange={(e) => setEditingRequisition({...editingRequisition, dateRequested: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#82A33D]"
+                    />
+                  </div>
+                </div>
+                
+                <div className="mb-4">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Requested By
+                  </label>
+                  <input
+                    type="text"
+                    value={editingRequisition.requestedBy}
+                    onChange={(e) => setEditingRequisition({...editingRequisition, requestedBy: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#82A33D]"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Item
+                    </label>
+                    <input
+                      type="text"
+                      value={editingRequisition.item}
+                      onChange={(e) => setEditingRequisition({...editingRequisition, item: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#82A33D]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Quantity
+                    </label>
+                    <input
+                      type="number"
+                      value={editingRequisition.quantity}
+                      onChange={(e) => setEditingRequisition({...editingRequisition, quantity: parseInt(e.target.value)})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#82A33D]"
+                    />
+                  </div>
+                </div>
+                
+                <div className="mb-4">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Department
+                  </label>
+                  <select
+                    value={editingRequisition.department}
+                    onChange={(e) => setEditingRequisition({...editingRequisition, department: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#82A33D] cursor-pointer"
+                  >
+                    <option value="Housekeeping">Housekeeping</option>
+                    <option value="Front Desk">Front Desk</option>
+                    <option value="Restaurant">Restaurant</option>
+                    <option value="Guest Amenities">Guest Amenities</option>
+                    <option value="Maintenance">Maintenance</option>
+                    <option value="Kitchen">Kitchen</option>
+                  </select>
+                </div>
+                
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Status
+                  </label>
+                  <select
+                    value={editingRequisition.status}
+                    onChange={(e) => setEditingRequisition({...editingRequisition, status: e.target.value as any})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#82A33D] cursor-pointer"
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="Approved">Approved</option>
+                    <option value="Rejected">Rejected</option>
+                    <option value="Completed">Completed</option>
+                  </select>
+                </div>
+                
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={closeUpdatePopup}
+                    className="flex-1 py-3 border border-[#82A33D] text-[#82A33D] rounded-lg hover:bg-gray-50 transition-colors cursor-pointer font-semibold"
+                  >
+                    CANCEL
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-3 bg-[#82A33D] text-white rounded-lg hover:bg-[#6d8930] transition-colors cursor-pointer font-semibold"
+                  >
+                    UPDATE
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Reusable Confirmation Popups */}
+        <ConfirmationPopup
+          isOpen={showDeletePopup}
+          onClose={closeDeletePopup}
+          onConfirm={handleDeleteRequest}
+          title="Delete Request"
+          message={`Are you sure you want to delete the request ${deletingRequisition?.requestId} for ${deletingRequisition?.item}? This action cannot be undone.`}
+          type="delete"
+          confirmText="DELETE"
+        />
+
+        <ConfirmationPopup
+          isOpen={showSuccessPopup}
+          onClose={closeSuccessPopup}
+          title="Success"
+          message={successMessage}
+          type="success"
+          showCancelButton={false}
+          showConfirmButton={false}
+        />
       </main>
     </div>
   );

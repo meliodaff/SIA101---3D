@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Navbars from '../components/Navbars';
+import ConfirmationPopup from '../components/ConfirmationPopup';
 
 // Define types for supplier and product
 interface Supplier {
@@ -101,6 +102,21 @@ const Suppliers: React.FC = () => {
   // State for modals
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showEditProductModal, setShowEditProductModal] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [showDeletePopup, setShowDeletePopup] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [supplierToDelete, setSupplierToDelete] = useState<Supplier | null>(null);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [productToEdit, setProductToEdit] = useState<Product | null>(null);
+  const [productFormData, setProductFormData] = useState({
+    itemCode: '',
+    itemName: '',
+    category: '',
+    quantity: '',
+    status: 'in-stock' as 'in-stock' | 'low-stock' | 'out-of-stock',
+    department: ''
+  });
   
   // State for current supplier
   const [currentSupplier, setCurrentSupplier] = useState<Supplier | null>(null);
@@ -184,6 +200,37 @@ const Suppliers: React.FC = () => {
     setCurrentSupplier(null);
   };
 
+  const closeDeletePopup = () => {
+    setShowDeletePopup(false);
+    setSupplierToDelete(null);
+    setProductToDelete(null);
+  };
+
+  const closeSuccessPopup = () => {
+    setShowSuccessPopup(false);
+    setSuccessMessage('');
+  };
+
+  const handleDeleteSupplier = () => {
+    if (!supplierToDelete) return;
+    
+    const updatedSuppliers = suppliers.filter(s => s.id !== supplierToDelete.id);
+    setSuppliers(updatedSuppliers);
+    setFilteredSuppliers(updatedSuppliers);
+    closeDeletePopup();
+    setSuccessMessage('Supplier Successfully Deleted');
+    setShowSuccessPopup(true);
+  };
+
+  const handleDeleteProduct = () => {
+    if (!productToDelete || !currentSupplier) return;
+    
+    // In a real implementation, we would update the products state here
+    closeDeletePopup();
+    setSuccessMessage('Product Successfully Deleted from Supplier');
+    setShowSuccessPopup(true);
+  };
+
   // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -212,7 +259,8 @@ const Suppliers: React.FC = () => {
     setSuppliers(updatedSuppliers);
     setFilteredSuppliers(updatedSuppliers);
     closeAddModal();
-    alert('Supplier added successfully!');
+    setSuccessMessage('Supplier Successfully Added');
+    setShowSuccessPopup(true);
   };
 
   // Handle form input changes
@@ -226,7 +274,9 @@ const Suppliers: React.FC = () => {
 
   // Get status badge class for suppliers
   const getStatusBadgeClass = (status: string) => {
-    return status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+   return status === 'active' 
+    ? 'bg-[#82A33D] text-white' 
+    : 'bg-transparent border border-[#82A33D] text-red-500';
   };
 
   // Get status badge class for products
@@ -255,6 +305,51 @@ const Suppliers: React.FC = () => {
   // Switch tabs in supplier details
   const switchTab = (tab: 'general' | 'products') => {
     setActiveTab(tab);
+  };
+
+  // Product management functions
+  const openEditProduct = (product: Product) => {
+    setProductToEdit(product);
+    setProductFormData({
+      itemCode: product.itemCode,
+      itemName: product.itemName,
+      category: product.category,
+      quantity: product.quantity.toString(),
+      status: product.status,
+      department: product.department
+    });
+    setShowEditProductModal(true);
+  };
+
+  const closeEditProductModal = () => {
+    setShowEditProductModal(false);
+    setProductToEdit(null);
+    setProductFormData({
+      itemCode: '',
+      itemName: '',
+      category: '',
+      quantity: '',
+      status: 'in-stock',
+      department: ''
+    });
+  };
+
+  const handleUpdateProduct = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!productToEdit) return;
+
+    // In a real implementation, we would create and save the updated product here
+    closeEditProductModal();
+    setSuccessMessage('Product Successfully Updated');
+    setShowSuccessPopup(true);
+  };
+
+  const handleProductInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setProductFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   // Edit supplier
@@ -307,7 +402,8 @@ const Suppliers: React.FC = () => {
     setCurrentSupplier(updatedSupplier);
     closeAddModal();
     setShowDetailsModal(true);
-    alert('Supplier updated successfully!');
+    setSuccessMessage('Supplier Successfully Updated');
+    setShowSuccessPopup(true);
   };
 
   return (
@@ -399,22 +495,30 @@ const Suppliers: React.FC = () => {
                 </div>
 
                 {/* Bottom Row */}
-                <div className="p-4">
-                  <div className="bg-[#CFD098] rounded-lg p-4">
+                <div className="p-2">
+                  <div className="bg-[#CFD098] rounded-[8px] p-2">
                     <div className="flex justify-between items-center gap-4">
                       <div className="flex items-center gap-2 flex-1 max-w-md">
-                        <span className="text-lg">📍</span>
+                        <img 
+                          src="/src/assets/icons/loc.png" 
+                          alt="Location" 
+                          className="w-4 h-4 object-contain"
+                        />
                         <p className="text-gray-800 text-sm truncate">{supplier.address}</p>
                       </div>
-                      
+
                       <div className="flex items-center gap-2">
-                        <span className="text-lg">📦</span>
+                        <img 
+                          src="/src/assets/icons/product.png" 
+                          alt="Products" 
+                          className="w-4 h-4 object-contain"
+                        />
                         <p className="text-[#889D65] font-medium text-sm">{supplier.products} Product(s)</p>
                       </div>
 
                       <div className="flex items-center gap-3">
                         <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">PORTAL STATUS:</span>
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadgeClass(supplier.portalStatus)}`}>
+                        <span className={`px-4 py-2 rounded-[5px] text-xs font-semibold ${getStatusBadgeClass(supplier.portalStatus)}`}>
                           {getStatusText(supplier.portalStatus)}
                         </span>
                       </div>
@@ -910,14 +1014,23 @@ const Suppliers: React.FC = () => {
                               <td className="px-6 py-4 text-sm text-gray-800">{product.department}</td>
                               <td className="px-6 py-4">
                                 <div className="flex gap-2">
-                                  <button className="w-8 h-8 border border-gray-300 rounded-lg flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer">
+                                  <button 
+                                    onClick={() => openEditProduct(product)}
+                                    className="w-8 h-8 border border-gray-300 rounded-lg flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer"
+                                  >
                                     <img 
                                       src="/src/assets/icons/edit.png" 
                                       alt="Edit" 
                                       className="w-4 h-4 object-contain"
                                     />
                                   </button>
-                                  <button className="w-8 h-8 border border-gray-300 rounded-lg flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer">
+                                  <button 
+                                    onClick={() => {
+                                      setProductToDelete(product);
+                                      setShowDeletePopup(true);
+                                    }}
+                                    className="w-8 h-8 border border-gray-300 rounded-lg flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer"
+                                  >
                                     <img 
                                       src="/src/assets/icons/delete.png" 
                                       alt="Delete" 
@@ -934,6 +1047,161 @@ const Suppliers: React.FC = () => {
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Success Popup */}
+        <ConfirmationPopup
+          isOpen={showSuccessPopup}
+          onClose={closeSuccessPopup}
+          title="Success"
+          message={successMessage}
+          type="success"
+          showCancelButton={false}
+          showConfirmButton={false}
+        />
+
+        {/* Delete Confirmation Popup */}
+        <ConfirmationPopup 
+          isOpen={showDeletePopup}
+          onClose={closeDeletePopup}
+          onConfirm={productToDelete ? handleDeleteProduct : handleDeleteSupplier}
+          title="Delete Confirmation"
+          message={productToDelete 
+            ? `Are you sure you want to delete ${productToDelete.itemName} from this supplier? This action cannot be undone.`
+            : `Are you sure you want to delete ${supplierToDelete?.companyName}? This action cannot be undone.`
+          }
+          type="delete"
+          confirmText="DELETE"
+          cancelText="CANCEL"
+        />
+
+        {/* Edit Product Modal */}
+        {showEditProductModal && productToEdit && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl w-full max-w-md mx-4 shadow-xl">
+              <div className="flex justify-between items-center p-6 border-b border-gray-200">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                    <img src="/src/assets/icons/edit.png" alt="Edit" className="w-6 h-6" />
+                  </div>
+                  <h2 className="text-xl font-semibold">Edit Product</h2>
+                </div>
+                <button 
+                  onClick={closeEditProductModal}
+                  className="w-8 h-8 border border-[#82A33D] text-[#82A33D] rounded-lg hover:bg-[#82A33D] hover:text-white transition-colors cursor-pointer"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <form onSubmit={handleUpdateProduct} className="p-6">
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Item Code <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="itemCode"
+                      value={productFormData.itemCode}
+                      onChange={handleProductInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#82A33D]"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Item Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="itemName"
+                      value={productFormData.itemName}
+                      onChange={handleProductInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#82A33D]"
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div className="mb-4">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Category <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="category"
+                    value={productFormData.category}
+                    onChange={handleProductInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#82A33D]"
+                    required
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Status <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      name="status"
+                      value={productFormData.status}
+                      onChange={handleProductInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#82A33D] cursor-pointer"
+                      required
+                    >
+                      <option value="in-stock">In Stock</option>
+                      <option value="low-stock">Low Stock</option>
+                      <option value="out-of-stock">Out of Stock</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Quantity <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      name="quantity"
+                      value={productFormData.quantity}
+                      onChange={handleProductInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#82A33D]"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Department <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="department"
+                    value={productFormData.department}
+                    onChange={handleProductInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#82A33D]"
+                    required
+                  />
+                </div>
+                
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={closeEditProductModal}
+                    className="flex-1 py-3 border border-[#82A33D] text-[#82A33D] rounded-lg hover:bg-gray-50 transition-colors cursor-pointer font-semibold"
+                  >
+                    CANCEL
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-3 bg-[#82A33D] text-white rounded-lg hover:bg-[#6d8930] transition-colors cursor-pointer font-semibold"
+                  >
+                    UPDATE
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}

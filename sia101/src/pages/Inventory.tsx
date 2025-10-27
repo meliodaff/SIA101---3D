@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Navbars from '../components/Navbars';
+import ConfirmationPopup from '../components/ConfirmationPopup';
 
 // Define types for our inventory item
 interface InventoryItem {
@@ -26,6 +27,8 @@ const Inventory: React.FC = () => {
   const [showAddPopup, setShowAddPopup] = useState(false);
   const [showUpdatePopup, setShowUpdatePopup] = useState(false);
   const [showDeletePopup, setShowDeletePopup] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   // State for form data
   const [newItem, setNewItem] = useState({
@@ -67,6 +70,11 @@ const Inventory: React.FC = () => {
     setDeletingItem(null);
   };
 
+  const closeSuccessPopup = () => {
+    setShowSuccessPopup(false);
+    setSuccessMessage('');
+  };
+
   // Form handlers
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,7 +96,8 @@ const Inventory: React.FC = () => {
 
     setInventoryItems([...inventoryItems, newInventoryItem]);
     closeAddPopup();
-    alert('Item added successfully!');
+    setSuccessMessage('Item Successfully Added');
+    setShowSuccessPopup(true);
   };
 
   const handleUpdateItem = (e: React.FormEvent) => {
@@ -102,7 +111,8 @@ const Inventory: React.FC = () => {
 
     setInventoryItems(updatedItems);
     closeUpdatePopup();
-    alert('Item updated successfully!');
+    setSuccessMessage('Item Successfully Updated');
+    setShowSuccessPopup(true);
   };
 
   const handleDeleteItem = () => {
@@ -111,7 +121,8 @@ const Inventory: React.FC = () => {
     const filteredItems = inventoryItems.filter(item => item.id !== deletingItem.id);
     setInventoryItems(filteredItems);
     closeDeletePopup();
-    alert('Item deleted successfully!');
+    setSuccessMessage('Item Successfully Deleted');
+    setShowSuccessPopup(true);
   };
 
   // Status badge styling
@@ -452,44 +463,26 @@ const Inventory: React.FC = () => {
           </div>
         )}
 
-        {/* Delete Confirmation Popup */}
-        {showDeletePopup && deletingItem && (
-          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-white rounded-2xl w-full max-w-md mx-4 shadow-xl">
-              <div className="flex justify-between items-center p-6 border-b border-gray-200">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center">
-                    <img src="/src/assets/icons/delete.png" alt="Delete" className="w-6 h-6" />
-                  </div>
-                  <h2 className="text-xl font-semibold">Delete Confirmation</h2>
-                </div>
-                <button onClick={closeDeletePopup} className="w-8 h-8 border border-[#82A33D] text-[#82A33D] rounded-lg hover:bg-[#82A33D] hover:text-white transition-colors">
-                  ×
-                </button>
-              </div>
-              
-              <div className="p-6">
-                <p className="text-center text-gray-600 mb-6">
-                  Are you sure you want to delete this entry?
-                </p>
-                <div className="flex gap-3">
-                  <button
-                    onClick={closeDeletePopup}
-                    className="flex-1 py-3 border border-[#82A33D] text-[#82A33D] rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    CANCEL
-                  </button>
-                  <button
-                    onClick={handleDeleteItem}
-                    className="flex-1 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                  >
-                    CONFIRM
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Reusable Confirmation Popups */}
+        <ConfirmationPopup
+          isOpen={showDeletePopup}
+          onClose={closeDeletePopup}
+          onConfirm={handleDeleteItem}
+          title="Delete Item"
+          message={`Are you sure you want to delete ${deletingItem?.itemName}? This action cannot be undone.`}
+          type="delete"
+          confirmText="DELETE"
+        />
+
+        <ConfirmationPopup
+          isOpen={showSuccessPopup}
+          onClose={closeSuccessPopup}
+          title="Success"
+          message={successMessage}
+          type="success"
+          showCancelButton={false}
+          showConfirmButton={false}
+        />
       </main>
     </div>
   );

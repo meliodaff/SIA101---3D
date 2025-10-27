@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Navbars from '../components/Navbars';
+import ConfirmationPopup from '../components/ConfirmationPopup';
 
 interface ProcurementOrder {
   id: string;
@@ -19,8 +20,12 @@ const Procurement: React.FC = () => {
     { id: '3', orderId: '544127', supplier: 'Quality Linens Inc.', items: 20, totalValue: 67800, status: 'Pending', date: '2025-09-12' }
   ]);
 
-  // State for popup
+  // State for popups
   const [showAddPopup, setShowAddPopup] = useState(false);
+  const [showUpdatePopup, setShowUpdatePopup] = useState(false);
+  const [showDeletePopup, setShowDeletePopup] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   // State for form data
   const [newOrder, setNewOrder] = useState({
@@ -30,6 +35,10 @@ const Procurement: React.FC = () => {
     totalValue: '',
     status: ''
   });
+
+  // State for editing and deleting
+  const [editingOrder, setEditingOrder] = useState<ProcurementOrder | null>(null);
+  const [deletingOrder, setDeletingOrder] = useState<ProcurementOrder | null>(null);
 
   // Popup functions
   const openAddPopup = () => setShowAddPopup(true);
@@ -45,7 +54,32 @@ const Procurement: React.FC = () => {
     });
   };
 
-  // Form handler
+  const openUpdatePopup = (order: ProcurementOrder) => {
+    setEditingOrder(order);
+    setShowUpdatePopup(true);
+  };
+
+  const closeUpdatePopup = () => {
+    setShowUpdatePopup(false);
+    setEditingOrder(null);
+  };
+
+  const openDeletePopup = (order: ProcurementOrder) => {
+    setDeletingOrder(order);
+    setShowDeletePopup(true);
+  };
+
+  const closeDeletePopup = () => {
+    setShowDeletePopup(false);
+    setDeletingOrder(null);
+  };
+
+  const closeSuccessPopup = () => {
+    setShowSuccessPopup(false);
+    setSuccessMessage('');
+  };
+
+  // Form handlers
   const handleAddOrder = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -66,7 +100,36 @@ const Procurement: React.FC = () => {
 
     setOrders([newProcurementOrder, ...orders]);
     closeAddPopup();
-    console.log('✅ Order added successfully');
+    setSuccessMessage('Order Successfully Added');
+    setShowSuccessPopup(true);
+  };
+
+  const handleUpdateOrder = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!editingOrder) return;
+
+    const updatedOrders = orders.map(order =>
+      order.id === editingOrder.id ? editingOrder : order
+    );
+
+    setOrders(updatedOrders);
+    closeUpdatePopup();
+    setSuccessMessage('Order Successfully Updated');
+    setShowSuccessPopup(true);
+  };
+
+  const handleDeleteOrder = () => {
+    if (!deletingOrder) return;
+
+    const filteredOrders = orders.filter(
+      order => order.id !== deletingOrder.id
+    );
+
+    setOrders(filteredOrders);
+    closeDeletePopup();
+    setSuccessMessage('Order Successfully Deleted');
+    setShowSuccessPopup(true);
   };
 
   // Generate order ID
@@ -140,6 +203,7 @@ const Procurement: React.FC = () => {
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">Total Value</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">Status</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">Date</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -155,6 +219,30 @@ const Procurement: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-4 py-3 border-b border-gray-100">{order.date}</td>
+                    <td className="px-4 py-3 border-b border-gray-100">
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => openUpdatePopup(order)}
+                          className="p-1 hover:bg-gray-100 rounded transition-colors cursor-pointer"
+                        >
+                          <img 
+                            src="/src/assets/icons/edit.png" 
+                            alt="Edit" 
+                            className="w-4 h-4"
+                          />
+                        </button>
+                        <button 
+                          onClick={() => openDeletePopup(order)}
+                          className="p-1 hover:bg-gray-100 rounded transition-colors cursor-pointer"
+                        >
+                          <img 
+                            src="/src/assets/icons/delete.png" 
+                            alt="Delete" 
+                            className="w-4 h-4"
+                          />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -296,6 +384,153 @@ const Procurement: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Update Order Popup */}
+        {showUpdatePopup && editingOrder && (
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl w-full max-w-md mx-4 shadow-xl">
+              <div className="flex justify-between items-center p-6 border-b border-gray-200">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                    <img src="/src/assets/icons/edit.png" alt="Edit" className="w-6 h-6" />
+                  </div>
+                  <h2 className="text-xl font-semibold">Update Order</h2>
+                </div>
+                <button 
+                  onClick={closeUpdatePopup}
+                  className="w-8 h-8 border border-[#82A33D] text-[#82A33D] rounded-lg hover:bg-[#82A33D] hover:text-white transition-colors cursor-pointer"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <form onSubmit={handleUpdateOrder} className="p-6">
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Order ID
+                    </label>
+                    <input
+                      type="text"
+                      value={editingOrder.orderId}
+                      disabled
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Date
+                    </label>
+                    <input
+                      type="date"
+                      value={editingOrder.date}
+                      onChange={(e) => setEditingOrder({...editingOrder, date: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#82A33D]"
+                    />
+                  </div>
+                </div>
+                
+                <div className="mb-4">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Supplier
+                  </label>
+                  <select
+                    value={editingOrder.supplier}
+                    onChange={(e) => setEditingOrder({...editingOrder, supplier: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#82A33D] cursor-pointer"
+                  >
+                    <option value="ABC Supplies Co.">ABC Supplies Co.</option>
+                    <option value="Hotel Essentials Ltd.">Hotel Essentials Ltd.</option>
+                    <option value="Quality Linens Inc.">Quality Linens Inc.</option>
+                  </select>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Items
+                    </label>
+                    <input
+                      type="number"
+                      value={editingOrder.items}
+                      onChange={(e) => setEditingOrder({...editingOrder, items: parseInt(e.target.value)})}
+                      min="1"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#82A33D]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Total Value
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 font-semibold">₱</span>
+                      <input
+                        type="number"
+                        value={editingOrder.totalValue}
+                        onChange={(e) => setEditingOrder({...editingOrder, totalValue: parseFloat(e.target.value)})}
+                        min="0"
+                        step="0.01"
+                        className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#82A33D]"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Status
+                  </label>
+                  <select
+                    value={editingOrder.status}
+                    onChange={(e) => setEditingOrder({...editingOrder, status: e.target.value as any})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#82A33D] cursor-pointer"
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="In Transit">In Transit</option>
+                    <option value="Delivered">Delivered</option>
+                  </select>
+                </div>
+                
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={closeUpdatePopup}
+                    className="flex-1 py-3 border border-[#82A33D] text-[#82A33D] rounded-lg hover:bg-gray-50 transition-colors cursor-pointer font-semibold"
+                  >
+                    CANCEL
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-3 bg-[#82A33D] text-white rounded-lg hover:bg-[#6d8930] transition-colors cursor-pointer font-semibold"
+                  >
+                    UPDATE ORDER
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Reusable Confirmation Popups */}
+        <ConfirmationPopup
+          isOpen={showDeletePopup}
+          onClose={closeDeletePopup}
+          onConfirm={handleDeleteOrder}
+          title="Delete Order"
+          message={`Are you sure you want to delete order ${deletingOrder?.orderId} from ${deletingOrder?.supplier}? This action cannot be undone.`}
+          type="delete"
+          confirmText="DELETE"
+        />
+
+        <ConfirmationPopup
+          isOpen={showSuccessPopup}
+          onClose={closeSuccessPopup}
+          title="Success"
+          message={successMessage}
+          type="success"
+          showCancelButton={false}
+          showConfirmButton={false}
+        />
       </main>
     </div>
   );
