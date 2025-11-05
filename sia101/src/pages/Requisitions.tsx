@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import Navbars from '../components/Navbars';
 import ConfirmationPopup from '../components/ConfirmationPopup';
+import useGetRequisitions from '../api/getRequisitions';
 
 // Define types for requisition
 interface Requisition {
@@ -16,48 +17,7 @@ interface Requisition {
 
 const Requisitions: React.FC = () => {
   // State for requisitions
-  const [requisitions, setRequisitions] = useState<Requisition[]>([
-    {
-      id: '1',
-      requestId: 'REQ-00123',
-      requestedBy: 'Maria Dela Cruz',
-      item: 'Bath Towels',
-      quantity: 450,
-      department: 'Housekeeping',
-      dateRequested: '2025-09-10',
-      status: 'Pending'
-    },
-    {
-      id: '2',
-      requestId: 'REQ-00124',
-      requestedBy: 'John Santos',
-      item: 'Key Cards',
-      quantity: 80,
-      department: 'Front Desk',
-      dateRequested: '2025-09-11',
-      status: 'Approved'
-    },
-    {
-      id: '3',
-      requestId: 'REQ-00125',
-      requestedBy: 'Chef Mateo',
-      item: 'Wine Glasses',
-      quantity: 0,
-      department: 'Restaurant',
-      dateRequested: '2025-09-12',
-      status: 'Rejected'
-    },
-    {
-      id: '4',
-      requestId: 'REQ-00126',
-      requestedBy: 'Alex Cruz',
-      item: 'Soap',
-      quantity: 1200,
-      department: 'Guest Amenities',
-      dateRequested: '2025-09-13',
-      status: 'Completed'
-    }
-  ]);
+  
 
   // State for popups
   const [showAddPopup, setShowAddPopup] = useState(false);
@@ -195,6 +155,26 @@ const Requisitions: React.FC = () => {
     }
   };
 
+  const {
+    getRequisitions,
+    loadingForGetRequisitions,
+  } = useGetRequisitions();
+  
+  const [requisitions, setRequisitions] = useState<Requisition[]>([]);
+
+  useEffect(() => {
+    const useGetCurrentInventoryFunc = async () => {
+      const response = await getRequisitions();
+      console.log(response);
+      if (!response.data) {
+        alert(response.message);
+        return;
+      }
+
+      setRequisitions(response.data);
+    };
+    useGetCurrentInventoryFunc();
+  }, []);
   return (
     <div className="min-h-screen bg-[#FBF0E4]">
       <Navbars />
@@ -256,8 +236,8 @@ const Requisitions: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {requisitions.map((requisition) => (
-                  <tr key={requisition.id} className="hover:bg-gray-50 transition-colors">
+                {requisitions.map((requisition, key) => (
+                  <tr key={key} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 border-b border-gray-100">{requisition.requestId}</td>
                     <td className="px-4 py-3 border-b border-gray-100">{requisition.requestedBy}</td>
                     <td className="px-4 py-3 border-b border-gray-100">{requisition.item}</td>
