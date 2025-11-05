@@ -1,13 +1,9 @@
 import express from "express";
-import indexRoute from "./routes/index.js";
+import indexRoute from "./routes/dashboard.js";
 const app = express();
 const PORT = 3000;
 
-app.get("/", (req, res) => {
-  res.send("Hello worlddasdsadsa");
-});
-
-app.use("/api/index", indexRoute);
+app.use("/api/dashboard", indexRoute);
 
 app.listen(PORT, (error) => {
   if (error) throw error;
