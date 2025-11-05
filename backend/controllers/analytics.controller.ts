@@ -44,7 +44,7 @@ type WastageItem = {
     name: string,
     cost: string,
   };
-const wastageAnalysis = [
+const wastageAnalysis: WastageItem[] = [
   { name: 'Food Items', cost: '₱12,450' },
   { name: 'Damaged Linens', cost: '₱8,200' },
   { name: 'Expired Products', cost: '₱5,670' }
