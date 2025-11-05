@@ -1,9 +1,11 @@
 import express from "express";
-import indexRoute from "./routes/dashboard.js";
+import dashboardRoute from "./routes/dashboard.js";
+import suppliersRoute from "./routes/suppliers.js";
 const app = express();
 const PORT = 3000;
 
-app.use("/api/dashboard", indexRoute);
+app.use("/api/dashboard", dashboardRoute);
+app.use("/api/suppliers", suppliersRoute);
 
 app.listen(PORT, (error) => {
   if (error) throw error;

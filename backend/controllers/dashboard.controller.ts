@@ -87,7 +87,7 @@ const dashboardSummary: DashboardSummary[] = [
 ];
 
 export const getCurrentInventory = (req: Request, res: Response) => {
-  res.status(200).json(currentInventory);
+  res.status(200).json({ success: true, data: currentInventory });
 };
 
 export const getRecentProcurementActivities = (req: Request, res: Response) => {
@@ -96,7 +96,9 @@ export const getRecentProcurementActivities = (req: Request, res: Response) => {
 
 export const getDashboardSummary = (req: Request, res: Response) => {
   if (dashboardSummary.length <= 0) {
-    res.status(500).json({ message: "Missing Dashboard Summary" });
+    return res
+      .status(500)
+      .json({ success: false, message: "Missing Dashboard Summary" });
   }
-  res.status(200).json(dashboardSummary);
+  res.status(200).json({ success: true, data: dashboardSummary });
 };
