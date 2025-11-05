@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import Navbars from '../components/Navbars';
-import ConfirmationPopup from '../components/ConfirmationPopup';
+import React, { useEffect, useState } from "react";
+import Navbars from "../components/Navbars";
+import ConfirmationPopup from "../components/ConfirmationPopup";
 
 // Import icons
-import addIcon from '../assets/icons/add.png';
-import generateIcon from '../assets/icons/generate.png';
+import addIcon from "../assets/icons/add.png";
+import generateIcon from "../assets/icons/generate.png";
+import useGetDashboard from "../api/getDashboard";
 
 // Define types for our inventory item
 interface InventoryItem {
@@ -13,7 +14,7 @@ interface InventoryItem {
   itemName: string;
   category: string;
   quantity: number;
-  status: 'in-stock' | 'low-stock' | 'out-of-stock';
+  status: "in-stock" | "low-stock" | "out-of-stock";
   department: string;
 }
 
@@ -23,70 +24,59 @@ interface ProcurementOrder {
   supplier: string;
   items: number;
   totalValue: number;
-  status: 'Pending' | 'In Transit' | 'Delivered';
+  status: "Pending" | "In Transit" | "Delivered";
   date: string;
 }
 
 const Dashboard: React.FC = () => {
   // State for stats data
   const [stats] = useState([
-    { 
-      title: 'Total Items', 
-      value: '1,974', 
-      change: '+15% from last month', 
-      type: 'positive' 
+    {
+      title: "Total Items",
+      value: "1,974",
+      change: "+15% from last month",
+      type: "positive",
     },
-    { 
-      title: 'Low Stock Items', 
-      value: '56', 
-      change: 'Requires attention', 
-      type: 'attention' 
+    {
+      title: "Low Stock Items",
+      value: "56",
+      change: "Requires attention",
+      type: "attention",
     },
-    { 
-      title: 'Pending Orders', 
-      value: '99', 
-      change: '-5% from last week', 
-      type: 'positive' 
+    {
+      title: "Pending Orders",
+      value: "99",
+      change: "-5% from last week",
+      type: "positive",
     },
-    { 
-      title: 'Total Value', 
-      value: '₱867K', 
-      change: '+8% from last month', 
-      type: 'positive' 
-    }
-  ]);
-
-  // State for inventory items with CRUD functionality
-  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([
-    { id: 1, itemCode: '1231', itemName: 'Bath Towels', category: 'Housekeeping', quantity: 450, status: 'in-stock', department: 'Housekeeping' },
-    { id: 2, itemCode: '1231', itemName: 'Wine Glasses', category: 'F&B', quantity: 80, status: 'low-stock', department: 'Restaurant' },
-    { id: 3, itemCode: '1231', itemName: 'Light Bulbs', category: 'Maintenance', quantity: 0, status: 'out-of-stock', department: 'Maintenance' },
-    { id: 4, itemCode: '1231', itemName: 'Soap', category: 'Guest Amenities', quantity: 1200, status: 'in-stock', department: 'Housekeeping' },
-    { id: 5, itemCode: '1231', itemName: 'Key Cards', category: 'Front Desk', quantity: 85, status: 'low-stock', department: 'Front Desk' }
+    {
+      title: "Total Value",
+      value: "₱867K",
+      change: "+8% from last month",
+      type: "positive",
+    },
   ]);
 
   // State for procurement orders (simplified for dashboard)
-  const [procurementOrders] = useState<ProcurementOrder[]>([
-    { id: '1', orderId: '544125', supplier: 'ABC Supplies Co.', items: 15, totalValue: 45000, status: 'Delivered', date: '2025-09-10' },
-    { id: '2', orderId: '544126', supplier: 'Hotel Essentials Ltd.', items: 8, totalValue: 28500, status: 'In Transit', date: '2025-09-11' },
-    { id: '3', orderId: '544127', supplier: 'Quality Linens Inc.', items: 20, totalValue: 67800, status: 'Pending', date: '2025-09-12' }
-  ]);
+  const [procurementOrders, setProcurementOrders] = useState<
+    ProcurementOrder[]
+  >([]);
 
   // State for popups
   const [showAddPopup, setShowAddPopup] = useState(false);
   const [showUpdatePopup, setShowUpdatePopup] = useState(false);
   const [showDeletePopup, setShowDeletePopup] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState("");
 
   // State for form data
   const [newItem, setNewItem] = useState({
-    itemCode: '',
-    itemName: '',
-    category: '',
-    department: '',
-    status: '',
-    quantity: ''
+    itemCode: "",
+    itemName: "",
+    category: "",
+    department: "",
+    status: "",
+    quantity: "",
   });
 
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
@@ -96,7 +86,14 @@ const Dashboard: React.FC = () => {
   const openAddPopup = () => setShowAddPopup(true);
   const closeAddPopup = () => {
     setShowAddPopup(false);
-    setNewItem({ itemCode: '', itemName: '', category: '', department: '', status: '', quantity: '' });
+    setNewItem({
+      itemCode: "",
+      itemName: "",
+      category: "",
+      department: "",
+      status: "",
+      quantity: "",
+    });
   };
 
   const openUpdatePopup = (item: InventoryItem) => {
@@ -121,15 +118,22 @@ const Dashboard: React.FC = () => {
 
   const closeSuccessPopup = () => {
     setShowSuccessPopup(false);
-    setSuccessMessage('');
+    setSuccessMessage("");
   };
 
   // Form handlers
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!newItem.itemCode || !newItem.itemName || !newItem.category || !newItem.department || !newItem.status || !newItem.quantity) {
-      alert('Please fill in all fields');
+
+    if (
+      !newItem.itemCode ||
+      !newItem.itemName ||
+      !newItem.category ||
+      !newItem.department ||
+      !newItem.status ||
+      !newItem.quantity
+    ) {
+      alert("Please fill in all fields");
       return;
     }
 
@@ -139,73 +143,127 @@ const Dashboard: React.FC = () => {
       itemName: newItem.itemName,
       category: newItem.category,
       quantity: parseInt(newItem.quantity),
-      status: newItem.status as 'in-stock' | 'low-stock' | 'out-of-stock',
-      department: newItem.department
+      status: newItem.status as "in-stock" | "low-stock" | "out-of-stock",
+      department: newItem.department,
     };
 
     setInventoryItems([...inventoryItems, newInventoryItem]);
     closeAddPopup();
-    setSuccessMessage('Item Successfully Added');
+    setSuccessMessage("Item Successfully Added");
     setShowSuccessPopup(true);
   };
 
   const handleUpdateItem = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!editingItem) return;
 
-    const updatedItems = inventoryItems.map(item =>
+    const updatedItems = inventoryItems.map((item) =>
       item.id === editingItem.id ? { ...editingItem } : item
     );
 
     setInventoryItems(updatedItems);
     closeUpdatePopup();
-    setSuccessMessage('Item Successfully Updated');
+    setSuccessMessage("Item Successfully Updated");
     setShowSuccessPopup(true);
   };
 
   const handleDeleteItem = () => {
     if (!deletingItem) return;
 
-    const filteredItems = inventoryItems.filter(item => item.id !== deletingItem.id);
+    const filteredItems = inventoryItems.filter(
+      (item) => item.id !== deletingItem.id
+    );
     setInventoryItems(filteredItems);
     closeDeletePopup();
-    setSuccessMessage('Item Successfully Deleted');
+    setSuccessMessage("Item Successfully Deleted");
     setShowSuccessPopup(true);
   };
 
   // Status badge styling
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
-      case 'in-stock': return 'bg-green-100 text-green-800';
-      case 'low-stock': return 'bg-yellow-100 text-yellow-800';
-      case 'out-of-stock': return 'bg-red-100 text-red-800';
-      case 'Delivered': return 'bg-green-100 text-green-800';
-      case 'In Transit': return 'bg-orange-100 text-orange-600';
-      case 'Pending': return 'bg-red-100 text-red-600';
-      default: return 'bg-gray-100 text-gray-800';
+      case "In Stock":
+        return "bg-green-100 text-green-800";
+      case "Low Stock":
+        return "bg-yellow-100 text-yellow-800";
+      case "Out Of Stock":
+        return "bg-red-100 text-red-800";
+      case "Delivered":
+        return "bg-green-100 text-green-800";
+      case "In Transit":
+        return "bg-orange-100 text-orange-600";
+      case "Pending":
+        return "bg-red-100 text-red-600";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'in-stock': return 'In Stock';
-      case 'low-stock': return 'Low Stock';
-      case 'out-of-stock': return 'Out of Stock';
-      default: return status;
+      case "in-stock":
+        return "In Stock";
+      case "low-stock":
+        return "Low Stock";
+      case "out-of-stock":
+        return "Out of Stock";
+      default:
+        return status;
     }
   };
+
+  const {
+    getCurrentInventory,
+    loadingForGetCurrentInventory,
+    getRecentProcurement,
+  } = useGetDashboard();
+
+  // State for inventory items with CRUD functionality
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+
+  useEffect(() => {
+    const useGetCurrentInventoryFunc = async () => {
+      const response = await getCurrentInventory();
+      console.log(response);
+      if (!response.data) {
+        alert(response.message);
+        return;
+      }
+
+      setInventoryItems(response.data);
+    };
+    useGetCurrentInventoryFunc();
+  }, []);
+
+  useEffect(() => {
+    const useGetRecentProcurement = async () => {
+      const response = await getRecentProcurement();
+      console.log(response);
+      if (!response.data) {
+        alert(response.message);
+        return;
+      }
+
+      setProcurementOrders(response.data);
+      console.log(response.data);
+    };
+    useGetRecentProcurement();
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#FBF0E4]">
       <Navbars />
-      
+
       {/* Main Content */}
       <main className="ml-64 pt-20 p-8">
         {/* Stats Grid */}
         <div className="grid grid-cols-4 gap-6 mb-8">
           {stats.map((stat, index) => (
-            <div key={index} className="bg-white rounded-xl shadow-md overflow-hidden">
+            <div
+              key={index}
+              className="bg-white rounded-xl shadow-md overflow-hidden"
+            >
               <div className="h-1.5 bg-[#82A33D] w-full"></div>
               <div className="p-5">
                 <h3 className="text-xs font-medium text-gray-600 uppercase tracking-wider mb-2">
@@ -214,13 +272,15 @@ const Dashboard: React.FC = () => {
                 <div className="text-2xl font-bold text-gray-800 mb-2">
                   {stat.value}
                 </div>
-                <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-                  stat.type === 'positive' 
-                    ? 'bg-green-100 text-green-800' 
-                    : stat.type === 'attention' 
-                    ? 'bg-orange-100 text-orange-600'
-                    : 'bg-red-100 text-red-600'
-                }`}>
+                <span
+                  className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                    stat.type === "positive"
+                      ? "bg-green-100 text-green-800"
+                      : stat.type === "attention"
+                      ? "bg-orange-100 text-orange-600"
+                      : "bg-red-100 text-red-600"
+                  }`}
+                >
                   {stat.change}
                 </span>
               </div>
@@ -230,24 +290,20 @@ const Dashboard: React.FC = () => {
 
         {/* Action Buttons */}
         <div className="flex justify-end gap-3 mb-6">
-          <button 
+          <button
             onClick={openAddPopup}
             className="flex items-center gap-2 px-4 py-3 bg-white text-[#889D65] rounded-xl shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
           >
             <div className="w-5 h-5 bg-[#889D65] rounded-full flex items-center justify-center">
-              <img 
-                src={addIcon} 
-                alt="Add" 
-                className="w-3 h-3 object-contain"
-              />
+              <img src={addIcon} alt="Add" className="w-3 h-3 object-contain" />
             </div>
             Add New Item
           </button>
           <button className="flex items-center gap-2 px-4 py-3 bg-white text-[#889D65] rounded-xl shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer">
             <div className="w-5 h-5 bg-[#889D65] rounded-full flex items-center justify-center">
-              <img 
-                src={generateIcon} 
-                alt="Report" 
+              <img
+                src={generateIcon}
+                alt="Report"
                 className="w-3 h-3 object-contain"
               />
             </div>
@@ -258,10 +314,12 @@ const Dashboard: React.FC = () => {
         {/* Current Inventory Section */}
         <div className="bg-white rounded-2xl shadow-md p-6 mb-8">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">Current Inventory</h2>
-            <input 
-              type="text" 
-              placeholder="Search..." 
+            <h2 className="text-2xl font-bold text-gray-800">
+              Current Inventory
+            </h2>
+            <input
+              type="text"
+              placeholder="Search..."
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#82A33D] transition-colors w-64"
             />
           </div>
@@ -271,47 +329,75 @@ const Dashboard: React.FC = () => {
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-gray-50">
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">Item Code</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">Item Name</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">Category</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">Quantity</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">Status</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">Department</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">Actions</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">
+                    Item Code
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">
+                    Item Name
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">
+                    Category
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">
+                    Quantity
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">
+                    Status
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">
+                    Department
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {inventoryItems.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 border-b border-gray-100">{item.itemCode}</td>
-                    <td className="px-4 py-3 border-b border-gray-100">{item.itemName}</td>
-                    <td className="px-4 py-3 border-b border-gray-100">{item.category}</td>
-                    <td className="px-4 py-3 border-b border-gray-100">{item.quantity}</td>
+                {inventoryItems.map((item, key) => (
+                  <tr key={key} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 border-b border-gray-100">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(item.status)}`}>
+                      {item.itemCode}
+                    </td>
+                    <td className="px-4 py-3 border-b border-gray-100">
+                      {item.itemName}
+                    </td>
+                    <td className="px-4 py-3 border-b border-gray-100">
+                      {item.category}
+                    </td>
+                    <td className="px-4 py-3 border-b border-gray-100">
+                      {item.quantity}
+                    </td>
+                    <td className="px-4 py-3 border-b border-gray-100">
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
+                          item.status
+                        )}`}
+                      >
                         {getStatusText(item.status)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 border-b border-gray-100">{item.department}</td>
+                    <td className="px-4 py-3 border-b border-gray-100">
+                      {item.department}
+                    </td>
                     <td className="px-4 py-3 border-b border-gray-100">
                       <div className="flex gap-2">
-                        <button 
+                        <button
                           onClick={() => openUpdatePopup(item)}
                           className="p-1 hover:bg-gray-100 rounded transition-colors cursor-pointer"
                         >
-                          <img 
-                            src="/src/assets/icons/edit.png" 
-                            alt="Edit" 
+                          <img
+                            src="/src/assets/icons/edit.png"
+                            alt="Edit"
                             className="w-4 h-4"
                           />
                         </button>
-                        <button 
+                        <button
                           onClick={() => openDeletePopup(item)}
                           className="p-1 hover:bg-gray-100 rounded transition-colors cursor-pointer"
                         >
-                          <img 
-                            src="/src/assets/icons/delete.png" 
-                            alt="Delete" 
+                          <img
+                            src="/src/assets/icons/delete.png"
+                            alt="Delete"
                             className="w-4 h-4"
                           />
                         </button>
@@ -327,48 +413,90 @@ const Dashboard: React.FC = () => {
         {/* Charts Section */}
         <div className="grid grid-cols-2 gap-6 mb-8">
           <div className="bg-white rounded-2xl shadow-md p-6">
-            <h3 className="text-lg font-bold text-gray-800 mb-4">Inventory Consumption Trends</h3>
+            <h3 className="text-lg font-bold text-gray-800 mb-4">
+              Inventory Consumption Trends
+            </h3>
             <div className="h-48 bg-gray-100 rounded-lg flex items-center justify-center">
-              <span className="text-gray-500 font-semibold">CHART VISUALIZATION</span>
+              <span className="text-gray-500 font-semibold">
+                CHART VISUALIZATION
+              </span>
             </div>
           </div>
           <div className="bg-white rounded-2xl shadow-md p-6">
-            <h3 className="text-lg font-bold text-gray-800 mb-4">Department Usage Analysis</h3>
+            <h3 className="text-lg font-bold text-gray-800 mb-4">
+              Department Usage Analysis
+            </h3>
             <div className="h-48 bg-gray-100 rounded-lg flex items-center justify-center">
-              <span className="text-gray-500 font-semibold">CHART VISUALIZATION</span>
+              <span className="text-gray-500 font-semibold">
+                CHART VISUALIZATION
+              </span>
             </div>
           </div>
         </div>
 
         {/* Recent Procurement Activities */}
         <div className="bg-white rounded-2xl shadow-md p-6">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">Recent Procurement Activities</h2>
-          
+          <h2 className="text-2xl font-bold text-gray-800 mb-6">
+            Recent Procurement Activities
+          </h2>
+
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-gray-50">
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">Order ID</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">Supplier</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">Items</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">Total Value</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">Status</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">Date</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">
+                    Order ID
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">
+                    Supplier
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">
+                    Items
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">
+                    Total Value
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">
+                    Status
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 border-b border-gray-200">
+                    Date
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {procurementOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 border-b border-gray-100">{order.orderId}</td>
-                    <td className="px-4 py-3 border-b border-gray-100">{order.supplier}</td>
-                    <td className="px-4 py-3 border-b border-gray-100">{order.items}</td>
-                    <td className="px-4 py-3 border-b border-gray-100">₱{order.totalValue.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
+                  <tr
+                    key={order.id}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
                     <td className="px-4 py-3 border-b border-gray-100">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(order.status)}`}>
+                      {order.orderId}
+                    </td>
+                    <td className="px-4 py-3 border-b border-gray-100">
+                      {order.supplier}
+                    </td>
+                    <td className="px-4 py-3 border-b border-gray-100">
+                      {order.items}
+                    </td>
+                    <td className="px-4 py-3 border-b border-gray-100">
+                      ₱
+                      {order.totalValue.toLocaleString("en-PH", {
+                        minimumFractionDigits: 2,
+                      })}
+                    </td>
+                    <td className="px-4 py-3 border-b border-gray-100">
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
+                          order.status
+                        )}`}
+                      >
                         {order.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3 border-b border-gray-100">{order.date}</td>
+                    <td className="px-4 py-3 border-b border-gray-100">
+                      {order.date}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -383,15 +511,22 @@ const Dashboard: React.FC = () => {
               <div className="flex justify-between items-center p-6 border-b border-gray-200">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
-                    <img src="/src/assets/icons/add.png" alt="Add" className="w-6 h-6 invert" />
+                    <img
+                      src="/src/assets/icons/add.png"
+                      alt="Add"
+                      className="w-6 h-6 invert"
+                    />
                   </div>
                   <h2 className="text-xl font-semibold">Add New Item</h2>
                 </div>
-                <button onClick={closeAddPopup} className="w-8 h-8 border border-[#82A33D] text-[#82A33D] rounded-lg hover:bg-[#82A33D] hover:text-white transition-colors cursor-pointer">
+                <button
+                  onClick={closeAddPopup}
+                  className="w-8 h-8 border border-[#82A33D] text-[#82A33D] rounded-lg hover:bg-[#82A33D] hover:text-white transition-colors cursor-pointer"
+                >
                   ×
                 </button>
               </div>
-              
+
               <form onSubmit={handleAddItem} className="p-6">
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
@@ -399,7 +534,9 @@ const Dashboard: React.FC = () => {
                       type="text"
                       placeholder="Item Code"
                       value={newItem.itemCode}
-                      onChange={(e) => setNewItem({...newItem, itemCode: e.target.value})}
+                      onChange={(e) =>
+                        setNewItem({ ...newItem, itemCode: e.target.value })
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#82A33D]"
                     />
                   </div>
@@ -408,26 +545,32 @@ const Dashboard: React.FC = () => {
                       type="text"
                       placeholder="Item Name"
                       value={newItem.itemName}
-                      onChange={(e) => setNewItem({...newItem, itemName: e.target.value})}
+                      onChange={(e) =>
+                        setNewItem({ ...newItem, itemName: e.target.value })
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#82A33D]"
                     />
                   </div>
                 </div>
-                
+
                 <div className="mb-4">
                   <input
                     type="text"
                     placeholder="Category"
                     value={newItem.category}
-                    onChange={(e) => setNewItem({...newItem, category: e.target.value})}
+                    onChange={(e) =>
+                      setNewItem({ ...newItem, category: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#82A33D]"
                   />
                 </div>
-                
+
                 <div className="mb-4">
                   <select
                     value={newItem.department}
-                    onChange={(e) => setNewItem({...newItem, department: e.target.value})}
+                    onChange={(e) =>
+                      setNewItem({ ...newItem, department: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#82A33D] cursor-pointer"
                   >
                     <option value="">Select department</option>
@@ -437,12 +580,14 @@ const Dashboard: React.FC = () => {
                     <option value="front-desk">Front Desk</option>
                   </select>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div>
                     <select
                       value={newItem.status}
-                      onChange={(e) => setNewItem({...newItem, status: e.target.value})}
+                      onChange={(e) =>
+                        setNewItem({ ...newItem, status: e.target.value })
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#82A33D] cursor-pointer"
                     >
                       <option value="">Select status</option>
@@ -456,12 +601,14 @@ const Dashboard: React.FC = () => {
                       type="number"
                       placeholder="Quantity"
                       value={newItem.quantity}
-                      onChange={(e) => setNewItem({...newItem, quantity: e.target.value})}
+                      onChange={(e) =>
+                        setNewItem({ ...newItem, quantity: e.target.value })
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#82A33D]"
                     />
                   </div>
                 </div>
-                
+
                 <div className="flex gap-3">
                   <button
                     type="button"
@@ -489,22 +636,34 @@ const Dashboard: React.FC = () => {
               <div className="flex justify-between items-center p-6 border-b border-gray-200">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
-                    <img src="/src/assets/icons/edit.png" alt="Edit" className="w-6 h-6" />
+                    <img
+                      src="/src/assets/icons/edit.png"
+                      alt="Edit"
+                      className="w-6 h-6"
+                    />
                   </div>
                   <h2 className="text-xl font-semibold">Update Item</h2>
                 </div>
-                <button onClick={closeUpdatePopup} className="w-8 h-8 border border-[#82A33D] text-[#82A33D] rounded-lg hover:bg-[#82A33D] hover:text-white transition-colors cursor-pointer">
+                <button
+                  onClick={closeUpdatePopup}
+                  className="w-8 h-8 border border-[#82A33D] text-[#82A33D] rounded-lg hover:bg-[#82A33D] hover:text-white transition-colors cursor-pointer"
+                >
                   ×
                 </button>
               </div>
-              
+
               <form onSubmit={handleUpdateItem} className="p-6">
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
                     <input
                       type="text"
                       value={editingItem.itemCode}
-                      onChange={(e) => setEditingItem({...editingItem, itemCode: e.target.value})}
+                      onChange={(e) =>
+                        setEditingItem({
+                          ...editingItem,
+                          itemCode: e.target.value,
+                        })
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#82A33D]"
                     />
                   </div>
@@ -512,25 +671,40 @@ const Dashboard: React.FC = () => {
                     <input
                       type="text"
                       value={editingItem.itemName}
-                      onChange={(e) => setEditingItem({...editingItem, itemName: e.target.value})}
+                      onChange={(e) =>
+                        setEditingItem({
+                          ...editingItem,
+                          itemName: e.target.value,
+                        })
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#82A33D]"
                     />
                   </div>
                 </div>
-                
+
                 <div className="mb-4">
                   <input
                     type="text"
                     value={editingItem.category}
-                    onChange={(e) => setEditingItem({...editingItem, category: e.target.value})}
+                    onChange={(e) =>
+                      setEditingItem({
+                        ...editingItem,
+                        category: e.target.value,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#82A33D]"
                   />
                 </div>
-                
+
                 <div className="mb-4">
                   <select
                     value={editingItem.department}
-                    onChange={(e) => setEditingItem({...editingItem, department: e.target.value})}
+                    onChange={(e) =>
+                      setEditingItem({
+                        ...editingItem,
+                        department: e.target.value,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#82A33D] cursor-pointer"
                   >
                     <option value="housekeeping">Housekeeping</option>
@@ -539,12 +713,17 @@ const Dashboard: React.FC = () => {
                     <option value="front-desk">Front Desk</option>
                   </select>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div>
                     <select
                       value={editingItem.status}
-                      onChange={(e) => setEditingItem({...editingItem, status: e.target.value as any})}
+                      onChange={(e) =>
+                        setEditingItem({
+                          ...editingItem,
+                          status: e.target.value as any,
+                        })
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#82A33D] cursor-pointer"
                     >
                       <option value="in-stock">In Stock</option>
@@ -556,12 +735,17 @@ const Dashboard: React.FC = () => {
                     <input
                       type="number"
                       value={editingItem.quantity}
-                      onChange={(e) => setEditingItem({...editingItem, quantity: parseInt(e.target.value)})}
+                      onChange={(e) =>
+                        setEditingItem({
+                          ...editingItem,
+                          quantity: parseInt(e.target.value),
+                        })
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#82A33D]"
                     />
                   </div>
                 </div>
-                
+
                 <div className="flex gap-3">
                   <button
                     type="button"
@@ -594,7 +778,7 @@ const Dashboard: React.FC = () => {
         />
 
         {/* Delete Confirmation Popup */}
-        <ConfirmationPopup 
+        <ConfirmationPopup
           isOpen={showDeletePopup && !!deletingItem}
           onClose={closeDeletePopup}
           onConfirm={handleDeleteItem}

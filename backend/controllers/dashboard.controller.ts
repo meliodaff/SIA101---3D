@@ -10,7 +10,7 @@ const currentInventory = [
     department: "Housekeeping",
   },
   {
-    itemCode: 1231,
+    itemCode: 12321,
     itemName: "Wine Glasses",
     category: "F&B",
     quantity: 80,
@@ -22,13 +22,14 @@ const currentInventory = [
     itemName: "Light Bulbs",
     category: "Maintenance",
     quantity: 0,
-    status: "Out of Stock",
+    status: "Out Of Stock",
     department: "Maintenance",
   },
 ];
 
 const procurement = [
   {
+    id: 1,
     orderId: 544125,
     supplier: "ABC Supplies Co.",
     items: 15,
@@ -37,6 +38,8 @@ const procurement = [
     date: "2025-09-10",
   },
   {
+    id: 2,
+    orderId: 54412223235,
     supplier: "Hotel Essentials Ltd.",
     items: 8,
     totalValue: 28500.0,
@@ -44,6 +47,8 @@ const procurement = [
     date: "2025-09-11",
   },
   {
+    id: 3,
+    orderId: 544125,
     supplier: "Quality Linens Inc.",
     items: 20,
     totalValue: 67800.0,
@@ -91,7 +96,13 @@ export const getCurrentInventory = (req: Request, res: Response) => {
 };
 
 export const getRecentProcurementActivities = (req: Request, res: Response) => {
-  res.status(200).json(procurement);
+  if (procurement.length <= 0) {
+    return res
+      .status(500)
+      .json({ success: false, message: "Missing Procurement Activities" });
+  }
+
+  res.status(200).json({ success: true, data: procurement });
 };
 
 export const getDashboardSummary = (req: Request, res: Response) => {
