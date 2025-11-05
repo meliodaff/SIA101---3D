@@ -52,13 +52,11 @@ const procurement = [
   },
 ];
 
-type Type = "negative" | "positive";
-
 type DashboardSummary = {
   title: string;
   value: number;
   change: string;
-  type: Type;
+  type: "positive" | "negative";
 };
 
 const dashboardSummary: DashboardSummary[] = [
