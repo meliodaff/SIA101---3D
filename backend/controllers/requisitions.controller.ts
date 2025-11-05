@@ -14,8 +14,8 @@ const requisitions: Requisitions[] = [
 
   {
     requestId: 1231,
-    requestedBy: "Bath Towels",
-    item: "Housekeeping",
+    requestedBy: "Mario Dela Cruz",
+    item: "Bath Towels",
     quantity: 450,
     department: "Housekeeping",
     dateRequested: "2025-01-15",
