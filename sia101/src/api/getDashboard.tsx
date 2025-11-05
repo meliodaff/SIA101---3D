@@ -1,0 +1,62 @@
+import { useState } from "react";
+import axios from "./axiosInstance";
+
+const useGetDashboard = () => {
+  const [loadingForGetCurrentInventory, setLoadingForGetCurrentInventory] =
+    useState(false);
+  const [loadingForGetRecentProcurement, setLoadingForGetRecentProcurement] =
+    useState(false);
+
+  const getCurrentInventory = async () => {
+    try {
+      setLoadingForGetCurrentInventory(true);
+      const response = await axios.get("/dashboard/get-current-inventory");
+      return response.data;
+    } catch (error: any) {
+      console.log(error);
+      if (error.status >= 400) {
+        return {
+          success: false,
+          message: error.response.data.message,
+        };
+      }
+      return {
+        success: false,
+        message: "API calling failed",
+      };
+    } finally {
+      setLoadingForGetCurrentInventory(false);
+    }
+  };
+
+  const getRecentProcurement = async () => {
+    try {
+      setLoadingForGetRecentProcurement(true);
+      const response = await axios.get("/dashboard/get-recent-procurement");
+      return response.data;
+    } catch (error: any) {
+      console.log(error);
+      if (error.status >= 400) {
+        return {
+          success: false,
+          message: error.response.data.message,
+        };
+      }
+      return {
+        success: false,
+        message: "API calling failed",
+      };
+    } finally {
+      setLoadingForGetRecentProcurement(false);
+    }
+  };
+
+  return {
+    getCurrentInventory,
+    loadingForGetCurrentInventory,
+    getRecentProcurement,
+    loadingForGetRecentProcurement,
+  };
+};
+
+export default useGetDashboard;

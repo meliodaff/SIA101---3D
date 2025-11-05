@@ -1,13 +1,13 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Inventory from './pages/Inventory';
-import Procurement from './pages/Procurement';
-import Dashboard from './pages/Dashboard';
-import Requisitions from './pages/Requisitions';
-import Suppliers from './pages/Suppliers';
-import Analytics from './pages/Analytics';
-import Departments from './pages/Departments';
-import Reports from './pages/Reports';
-import Footer from './components/Footer';
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Inventory from "./pages/Inventory";
+import Procurement from "./pages/Procurement";
+import Dashboard from "./pages/Dashboard";
+import Requisitions from "./pages/Requisitions";
+import Suppliers from "./pages/Suppliers";
+import Analytics from "./pages/Analytics";
+import Departments from "./pages/Departments";
+import Reports from "./pages/Reports";
+import Footer from "./components/Footer";
 
 function App() {
   return (
