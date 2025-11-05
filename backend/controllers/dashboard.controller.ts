@@ -61,7 +61,7 @@ type DashboardSummary = {
   title: string;
   value: number;
   change: string;
-  type: "positive" | "negative";
+  type: "positive" | "negative" | "attention";
 };
 
 const dashboardSummary: DashboardSummary[] = [
@@ -81,7 +81,7 @@ const dashboardSummary: DashboardSummary[] = [
     title: "Pending Orders",
     value: 99,
     change: "-5% from last month",
-    type: "negative",
+    type: "attention",
   },
   {
     title: "Total Value",

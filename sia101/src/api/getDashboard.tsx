@@ -6,6 +6,31 @@ const useGetDashboard = () => {
     useState(false);
   const [loadingForGetRecentProcurement, setLoadingForGetRecentProcurement] =
     useState(false);
+  const [loadingForGetDashboardSummary, setLoadingForGetDashboardSummary] =
+    useState(false);
+
+    const getDashboardSummary = async () => {
+      try {
+        setLoadingForGetDashboardSummary(true);
+        const response = await axios.get("/dashboard/get-dashboard-summary");
+        return response.data;
+      } catch (error: any) {
+        console.log(error);
+        if (error.status >= 400) {
+          return {
+            success: false,
+            message: error.response.data.message,
+          };
+        }
+        return {
+          success: false,
+          message: "API calling failed",
+        };
+      } finally {
+        setLoadingForGetDashboardSummary(false);
+      }
+    };
+  
 
   const getCurrentInventory = async () => {
     try {
@@ -56,6 +81,8 @@ const useGetDashboard = () => {
     loadingForGetCurrentInventory,
     getRecentProcurement,
     loadingForGetRecentProcurement,
+    getDashboardSummary,
+    loadingForGetDashboardSummary,
   };
 };
 

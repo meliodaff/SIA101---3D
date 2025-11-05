@@ -30,32 +30,6 @@ interface ProcurementOrder {
 
 const Dashboard: React.FC = () => {
   // State for stats data
-  const [stats] = useState([
-    {
-      title: "Total Items",
-      value: "1,974",
-      change: "+15% from last month",
-      type: "positive",
-    },
-    {
-      title: "Low Stock Items",
-      value: "56",
-      change: "Requires attention",
-      type: "attention",
-    },
-    {
-      title: "Pending Orders",
-      value: "99",
-      change: "-5% from last week",
-      type: "positive",
-    },
-    {
-      title: "Total Value",
-      value: "₱867K",
-      change: "+8% from last month",
-      type: "positive",
-    },
-  ]);
 
   // State for procurement orders (simplified for dashboard)
   const [procurementOrders, setProcurementOrders] = useState<
@@ -213,12 +187,36 @@ const Dashboard: React.FC = () => {
     }
   };
 
+
   const {
     getCurrentInventory,
     loadingForGetCurrentInventory,
     getRecentProcurement,
+    getDashboardSummary,
   } = useGetDashboard();
 
+type DashboardSummary = {
+  title: string;
+  value: number;
+  change: string;
+  type: "positive" | "negative" | "attention";
+};
+
+  const [stats,setStats] = useState<DashboardSummary[]> ([]);
+
+  useEffect(() => {
+    const useGetDashboardSummaryFunc = async () => {
+      const response = await getDashboardSummary();
+      console.log(response);
+      if (!response.data) {
+        alert(response.message);
+        return;
+      }
+
+      setStats(response.data);
+    };
+    useGetDashboardSummaryFunc();
+  }, []);
   // State for inventory items with CRUD functionality
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
 
