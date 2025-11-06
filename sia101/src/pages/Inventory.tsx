@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbars from '../components/Navbars';
 import ConfirmationPopup from '../components/ConfirmationPopup';
-
+import useGetDashboard from '../api/getDashboard';
+import usePostDashboard from "../api/postDashboard";
 // Define types for our inventory item
 interface InventoryItem {
   id: number;
@@ -15,13 +16,7 @@ interface InventoryItem {
 
 const Inventory: React.FC = () => {
   // State for inventory items
-  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([
-    { id: 1, itemCode: '1231', itemName: 'Bath Towels', category: 'Housekeeping', quantity: 450, status: 'in-stock', department: 'Housekeeping' },
-    { id: 2, itemCode: '1231', itemName: 'Wine Glasses', category: 'F&B', quantity: 80, status: 'low-stock', department: 'Restaurant' },
-    { id: 3, itemCode: '1231', itemName: 'Light Bulbs', category: 'Maintenance', quantity: 0, status: 'out-of-stock', department: 'Maintenance' },
-    { id: 4, itemCode: '1231', itemName: 'Soap', category: 'Guest Amenities', quantity: 1200, status: 'in-stock', department: 'Housekeeping' },
-    { id: 5, itemCode: '1231', itemName: 'Key Cards', category: 'Front Desk', quantity: 85, status: 'low-stock', department: 'Front Desk' }
-  ]);
+
 
   // State for popups
   const [showAddPopup, setShowAddPopup] = useState(false);
@@ -96,6 +91,7 @@ const Inventory: React.FC = () => {
 
     setInventoryItems([...inventoryItems, newInventoryItem]);
     closeAddPopup();
+    usePostCurrentInventoryFunc(newInventoryItem);
     setSuccessMessage('Item Successfully Added');
     setShowSuccessPopup(true);
   };
@@ -143,7 +139,39 @@ const Inventory: React.FC = () => {
       default: return status;
     }
   };
+  const usePostCurrentInventoryFunc = async (newItem: InventoryItem) => {
+    const response = await postCurrentInventory(newItem);
 
+    if (!response.success) {
+      alert(response.message);
+      return;
+    }
+
+    console.log(response.message);
+  };
+
+  const {
+    getCurrentInventory,
+    loadingForGetCurrentInventory,
+  } = useGetDashboard();
+  const { postCurrentInventory } = usePostDashboard();
+
+  
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+
+  useEffect(() => {
+    const useGetCurrentInventoryFunc = async () => {
+      const response = await getCurrentInventory();
+      console.log(response);
+      if (!response.data) {
+        alert(response.message);
+        return;
+      }
+
+      setInventoryItems(response.data);
+    };
+    useGetCurrentInventoryFunc();
+  }, []);
   return (
     <div className="min-h-screen bg-[#FBF0E4]">
       <Navbars />
