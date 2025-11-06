@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState ,useEffect} from 'react';
 import Navbars from '../components/Navbars';
 import ConfirmationPopup from '../components/ConfirmationPopup';
-
+import useGetDepartments from '../api/getDepartments';
 interface Department {
   id: string;
   name: string;
@@ -41,97 +41,99 @@ interface Requisition {
   status: 'Pending' | 'Approved' | 'Rejected' | 'Completed';
 }
 
+
 const Departments: React.FC = () => {
   // State for departments
   const [departments, setDepartments] = useState<Department[]>([
-    {
-      id: 'DEPT001',
-      name: 'Housekeeping',
-      manager: 'Maria Santos',
-      itemsAssigned: 248,
-      totalUsage: '35%',
-      monthlyConsumption: 45680,
-      requests: 5
-    },
-    {
-      id: 'DEPT002',
-      name: 'Maintenance',
-      manager: 'Juan Dela Cruz',
-      itemsAssigned: 156,
-      totalUsage: '18%',
-      monthlyConsumption: 28450,
-      requests: 3
-    },
-    {
-      id: 'DEPT003',
-      name: 'Laundry Services',
-      manager: 'Ana Reyes',
-      itemsAssigned: 67,
-      totalUsage: '6%',
-      monthlyConsumption: 18560,
-      requests: 2
-    },
-    {
-      id: 'DEPT004',
-      name: 'Food & Beverages',
-      manager: 'Robert Lim',
-      itemsAssigned: 412,
-      totalUsage: '28%',
-      monthlyConsumption: 78920,
-      requests: 8
-    },
-    {
-      id: 'DEPT005',
-      name: 'Security',
-      manager: 'Carlos Gomez',
-      itemsAssigned: 45,
-      totalUsage: '5%',
-      monthlyConsumption: 9970,
-      requests: 1
-    },
-    {
-      id: 'DEPT006',
-      name: 'Front Desk',
-      manager: 'Lisa Tan',
-      itemsAssigned: 89,
-      totalUsage: '8%',
-      monthlyConsumption: 12340,
-      requests: 4
-    }
+    // {
+    //   id: 'DEPT001',
+    //   name: 'Housekeeping',
+    //   manager: 'Maria Santos',
+    //   itemsAssigned: 248,
+    //   totalUsage: '35%',
+    //   monthlyConsumption: 45680,
+    //   requests: 5
+    // },
+    // {
+    //   id: 'DEPT002',
+    //   name: 'Maintenance',
+    //   manager: 'Juan Dela Cruz',
+    //   itemsAssigned: 156,
+    //   totalUsage: '18%',
+    //   monthlyConsumption: 28450,
+    //   requests: 3
+    // },
+    // {
+    //   id: 'DEPT003',
+    //   name: 'Laundry Services',
+    //   manager: 'Ana Reyes',
+    //   itemsAssigned: 67,
+    //   totalUsage: '6%',
+    //   monthlyConsumption: 18560,
+    //   requests: 2
+    // },
+    // {
+    //   id: 'DEPT004',
+    //   name: 'Food & Beverages',
+    //   manager: 'Robert Lim',
+    //   itemsAssigned: 412,
+    //   totalUsage: '28%',
+    //   monthlyConsumption: 78920,
+    //   requests: 8
+    // },
+    // {
+    //   id: 'DEPT005',
+    //   name: 'Security',
+    //   manager: 'Carlos Gomez',
+    //   itemsAssigned: 45,
+    //   totalUsage: '5%',
+    //   monthlyConsumption: 9970,
+    //   requests: 1
+    // },
+    // {
+    //   id: 'DEPT006',
+    //   name: 'Front Desk',
+    //   manager: 'Lisa Tan',
+    //   itemsAssigned: 89,
+    //   totalUsage: '8%',
+    //   monthlyConsumption: 12340,
+    //   requests: 4
+    // }
   ]);
+  
+  const [departmentItems, setDepartmentItems] = useState<Record<string, DepartmentItem[]>>({
+    // 'Housekeeping': [
+    //   { code: '1231', name: 'Bath Towels', category: 'Housekeeping', quantity: 450, status: 'In Stock' },
+    //   { code: '1232', name: 'Bed Linens', category: 'Housekeeping', quantity: 320, status: 'In Stock' },
+    //   { code: '1233', name: 'Cleaning Supplies', category: 'Housekeeping', quantity: 45, status: 'Low Stock' },
+    //   { code: '1234', name: 'Toiletries', category: 'Guest Amenities', quantity: 1200, status: 'In Stock' },
+    //   { code: '1235', name: 'Vacuum Cleaners', category: 'Equipment', quantity: 12, status: 'In Stock' }
+    // ],
+    // 'Maintenance': [
+    //   { code: '2001', name: 'Light Bulbs', category: 'Maintenance', quantity: 0, status: 'Out of Stock' },
+    //   { code: '2002', name: 'Tools', category: 'Maintenance', quantity: 85, status: 'In Stock' }
+    // ],
+    // 'Laundry Services': [
+    //   { code: '3001', name: 'Detergent', category: 'Laundry', quantity: 45, status: 'Low Stock' },
+    //   { code: '3002', name: 'Fabric Softener', category: 'Laundry', quantity: 32, status: 'In Stock' }
+    // ],
+    // 'Food & Beverages': [
+    //   { code: '4001', name: 'Wine Glasses', category: 'F&B', quantity: 80, status: 'Low Stock' },
+    //   { code: '4002', name: 'Dinnerware', category: 'F&B', quantity: 250, status: 'In Stock' }
+    // ],
+    // 'Security': [
+    //   { code: '5001', name: 'Security Cameras', category: 'Security', quantity: 15, status: 'In Stock' }
+    // ],
+    // 'Front Desk': [
+    //   { code: '6001', name: 'Key Cards', category: 'Front Desk', quantity: 85, status: 'Low Stock' },
+    //   { code: '6002', name: 'Registration Forms', category: 'Front Desk', quantity: 500, status: 'In Stock' }
+    // ]
+  });  
 
   // State for department items
-  const [departmentItems, setDepartmentItems] = useState<Record<string, DepartmentItem[]>>({
-    'Housekeeping': [
-      { code: '1231', name: 'Bath Towels', category: 'Housekeeping', quantity: 450, status: 'In Stock' },
-      { code: '1232', name: 'Bed Linens', category: 'Housekeeping', quantity: 320, status: 'In Stock' },
-      { code: '1233', name: 'Cleaning Supplies', category: 'Housekeeping', quantity: 45, status: 'Low Stock' },
-      { code: '1234', name: 'Toiletries', category: 'Guest Amenities', quantity: 1200, status: 'In Stock' },
-      { code: '1235', name: 'Vacuum Cleaners', category: 'Equipment', quantity: 12, status: 'In Stock' }
-    ],
-    'Maintenance': [
-      { code: '2001', name: 'Light Bulbs', category: 'Maintenance', quantity: 0, status: 'Out of Stock' },
-      { code: '2002', name: 'Tools', category: 'Maintenance', quantity: 85, status: 'In Stock' }
-    ],
-    'Laundry Services': [
-      { code: '3001', name: 'Detergent', category: 'Laundry', quantity: 45, status: 'Low Stock' },
-      { code: '3002', name: 'Fabric Softener', category: 'Laundry', quantity: 32, status: 'In Stock' }
-    ],
-    'Food & Beverages': [
-      { code: '4001', name: 'Wine Glasses', category: 'F&B', quantity: 80, status: 'Low Stock' },
-      { code: '4002', name: 'Dinnerware', category: 'F&B', quantity: 250, status: 'In Stock' }
-    ],
-    'Security': [
-      { code: '5001', name: 'Security Cameras', category: 'Security', quantity: 15, status: 'In Stock' }
-    ],
-    'Front Desk': [
-      { code: '6001', name: 'Key Cards', category: 'Front Desk', quantity: 85, status: 'Low Stock' },
-      { code: '6002', name: 'Registration Forms', category: 'Front Desk', quantity: 500, status: 'In Stock' }
-    ]
-  });
 
   // State for maintenance requests
-  const [maintenanceRequests] = useState<MaintenanceRequest[]>([
+  const [maintenanceRequests, setMaintenanceRequests] = useState<MaintenanceRequest[]>([
     {
       id: '#00000',
       department: 'Housekeeping',
@@ -608,6 +610,37 @@ const Departments: React.FC = () => {
   const filteredRequisitions = requisitions.filter(req => 
     req.department === currentDepartment
   );
+  const {
+    getDepartments,
+    loadingForGetDepartments,
+    getMaintenanceRequest,
+    loadingForGetMaintenanceRequest,
+  } = useGetDepartments();
+
+
+  useEffect(() => {
+    const useGetDepartmentsFunc = async () => {
+      const departments = await getDepartments();
+      const maintenanceRequests = await getMaintenanceRequest();
+      console.log(departments);
+      console.log(maintenanceRequests);
+      if (!departments.data) {
+        alert(departments.message);
+        return;
+      }
+
+      if (!maintenanceRequests.data) {
+        alert(maintenanceRequests.message);
+        return;
+      }
+
+      setDepartments(departments.data.departments);
+      setDepartmentItems(departments.data.departmentItems);
+      setMaintenanceRequests(maintenanceRequests.data.maintenanceRequests);
+      setRequisitions(maintenanceRequests.data.requisitions)
+    };
+    useGetDepartmentsFunc();
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#FBF0E4]">

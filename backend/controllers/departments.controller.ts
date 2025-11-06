@@ -208,5 +208,8 @@ const requisitions: Requisition[] = [
 ];
 
 export const getDepartments = (req: Request, res: Response) => {
-      res.status(200).json({ success: true, data: {departments, departmentItems,maintenanceRequests,requisitions} });
+      res.status(200).json({ success: true, data: {departments, departmentItems} });
+};
+export const getMaintenanceRequest = (req: Request, res: Response) => {
+  res.status(200).json({ success: true, data: {maintenanceRequests,requisitions} });
 };
