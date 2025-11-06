@@ -9,5 +9,8 @@ router.get(
   dashboardController.getRecentProcurementActivities
 );
 router.get("/get-dashboard-summary", dashboardController.getDashboardSummary);
-
+router.post(
+  "/post-current-inventory",
+  dashboardController.postCurrentInventory
+);
 export default router;

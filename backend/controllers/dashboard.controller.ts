@@ -95,6 +95,29 @@ export const getCurrentInventory = (req: Request, res: Response) => {
   res.status(200).json({ success: true, data: currentInventory });
 };
 
+export const postCurrentInventory = (req: Request, res: Response) => {
+  const { itemCode, itemName, category, quantity, status, department } =
+    req.body;
+  const item = req.body;
+  if (
+    !itemCode ||
+    !itemName ||
+    !category ||
+    !quantity ||
+    !status ||
+    !department
+  ) {
+    res.status(400).json({ success: false, message: "Item Received Missing" });
+    return;
+  }
+
+  currentInventory.push(item);
+  console.log(item);
+  res
+    .status(200)
+    .json({ success: true, data: item, message: "Successfully Added" });
+};
+
 export const getRecentProcurementActivities = (req: Request, res: Response) => {
   if (procurement.length <= 0) {
     return res

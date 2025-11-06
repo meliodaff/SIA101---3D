@@ -96,6 +96,18 @@ const Dashboard: React.FC = () => {
   };
 
   // Form handlers
+
+  const usePostCurrentInventoryFunc = async (newItem: InventoryItem) => {
+    const response = await postCurrentInventory(newItem);
+
+    if (!response.success) {
+      alert(response.message);
+      return;
+    }
+
+    console.log(response.message);
+  };
+
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -123,6 +135,7 @@ const Dashboard: React.FC = () => {
 
     setInventoryItems([...inventoryItems, newInventoryItem]);
     closeAddPopup();
+    usePostCurrentInventoryFunc(newInventoryItem);
     setSuccessMessage("Item Successfully Added");
     setShowSuccessPopup(true);
   };
@@ -187,22 +200,22 @@ const Dashboard: React.FC = () => {
     }
   };
 
-
   const {
     getCurrentInventory,
     loadingForGetCurrentInventory,
     getRecentProcurement,
     getDashboardSummary,
+    postCurrentInventory,
   } = useGetDashboard();
 
-type DashboardSummary = {
-  title: string;
-  value: number;
-  change: string;
-  type: "positive" | "negative" | "attention";
-};
+  type DashboardSummary = {
+    title: string;
+    value: number;
+    change: string;
+    type: "positive" | "negative" | "attention";
+  };
 
-  const [stats,setStats] = useState<DashboardSummary[]> ([]);
+  const [stats, setStats] = useState<DashboardSummary[]>([]);
 
   useEffect(() => {
     const useGetDashboardSummaryFunc = async () => {

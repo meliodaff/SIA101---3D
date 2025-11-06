@@ -15,6 +15,8 @@ app.use(
   })
 );
 
+app.use(express.json());
+
 app.use("/api/dashboard", dashboardRoute);
 app.use("/api/suppliers", suppliersRoute);
 app.use("/api/analytics", analyticsRoute);
