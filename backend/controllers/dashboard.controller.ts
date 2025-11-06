@@ -1,8 +1,8 @@
 import type { Request, Response } from "express";
 
-const currentInventory = [
+let currentInventory = [
   {
-    itemCode: 1231,
+    itemCode: 123,
     itemName: "Bath Towels",
     category: "Housekeeping",
     quantity: 450,
@@ -10,7 +10,7 @@ const currentInventory = [
     department: "Housekeeping",
   },
   {
-    itemCode: 12321,
+    itemCode: 145,
     itemName: "Wine Glasses",
     category: "F&B",
     quantity: 80,
@@ -18,7 +18,7 @@ const currentInventory = [
     department: "Restaurant",
   },
   {
-    itemCode: 1231,
+    itemCode: 231,
     itemName: "Light Bulbs",
     category: "Maintenance",
     quantity: 0,
@@ -109,6 +109,60 @@ export const postCurrentInventory = (req: Request, res: Response) => {
   res
     .status(200)
     .json({ success: true, data: item, message: "Successfully Added" });
+};
+
+export const patchCurrentInventory = (req: Request, res: Response) => {
+  const { itemCode, itemName, category, quantity, status, department } =
+    req.body;
+  const item = req.body;
+
+  if (!itemCode || !itemName || !category || !status || !department) {
+    res.status(400).json({ success: false, message: "Item Received Missing" });
+    return;
+  }
+
+  console.log(item);
+
+  currentInventory = currentInventory.map((item) => {
+    if (itemCode === item.itemCode) {
+      return {
+        itemCode,
+        itemName,
+        category,
+        quantity,
+        status,
+        department,
+      };
+    }
+    return item;
+  });
+
+  res.status(200).json({
+    success: true,
+    data: currentInventory,
+    message: "Successfully updated",
+  });
+};
+
+export const deleteCurrentInventory = (req: Request, res: Response) => {
+  const { itemCode, itemName, category, quantity, status, department } =
+    req.body;
+  const item = req.body;
+
+  if (!itemCode || !itemName || !category || !status || !department) {
+    res.status(400).json({ success: false, message: "Item Received Missing" });
+    return;
+  }
+
+  currentInventory = currentInventory.filter(
+    (item) => item.itemCode !== itemCode
+  );
+
+  res.status(200).json({
+    success: true,
+    data: currentInventory,
+    message: "Successfully deleted",
+  });
 };
 
 export const getRecentProcurementActivities = (req: Request, res: Response) => {
