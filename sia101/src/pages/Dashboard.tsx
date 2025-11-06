@@ -7,6 +7,8 @@ import addIcon from "../assets/icons/add.png";
 import generateIcon from "../assets/icons/generate.png";
 import useGetDashboard from "../api/getDashboard";
 import usePostDashboard from "../api/postDashboard";
+import usePatchDashboard from "../api/patchDashboard";
+import useDeleteDashboard from "../api/deleteDashboard";
 
 // Define types for our inventory item
 interface InventoryItem {
@@ -98,8 +100,36 @@ const Dashboard: React.FC = () => {
 
   // Form handlers
 
+  const { patchCurrentInventory, loadingForPatchCurrentInventory } =
+    usePatchDashboard();
+
   const usePostCurrentInventoryFunc = async (newItem: InventoryItem) => {
     const response = await postCurrentInventory(newItem);
+
+    if (!response.success) {
+      alert(response.message);
+      return;
+    }
+
+    console.log(response.message);
+  };
+
+  const usePatchCurrentInventoryFunc = async (newItem: InventoryItem) => {
+    const response = await patchCurrentInventory(newItem);
+
+    if (!response.success) {
+      alert(response.message);
+      return;
+    }
+
+    console.log(response.message);
+  };
+
+  const { deleteCurrentInventory, loadingForDeleteCurrentInventory } =
+    useDeleteDashboard();
+
+  const useDeleteCurrentInventoryFunc = async (newItem: InventoryItem) => {
+    const response = await deleteCurrentInventory(newItem);
 
     if (!response.success) {
       alert(response.message);
@@ -147,9 +177,10 @@ const Dashboard: React.FC = () => {
     if (!editingItem) return;
 
     const updatedItems = inventoryItems.map((item) =>
-      item.id === editingItem.id ? { ...editingItem } : item
+      item.itemCode === editingItem.itemCode ? { ...editingItem } : item
     );
 
+    usePatchCurrentInventoryFunc(editingItem);
     setInventoryItems(updatedItems);
     closeUpdatePopup();
     setSuccessMessage("Item Successfully Updated");
@@ -160,8 +191,11 @@ const Dashboard: React.FC = () => {
     if (!deletingItem) return;
 
     const filteredItems = inventoryItems.filter(
-      (item) => item.id !== deletingItem.id
+      (item) => item.itemCode !== deletingItem.itemCode
     );
+
+    useDeleteCurrentInventoryFunc(deletingItem);
+
     setInventoryItems(filteredItems);
     closeDeletePopup();
     setSuccessMessage("Item Successfully Deleted");
@@ -285,7 +319,9 @@ const Dashboard: React.FC = () => {
                   {stat.title}
                 </h3>
                 <div className="text-2xl font-bold text-gray-800 mb-2">
-                  {stat.title === "Total Value" ? `P ${stat.value}` : stat.value}
+                  {stat.title === "Total Value"
+                    ? `P ${stat.value}`
+                    : stat.value}
                 </div>
                 <span
                   className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
@@ -672,6 +708,7 @@ const Dashboard: React.FC = () => {
                   <div>
                     <input
                       type="text"
+                      disabled
                       value={editingItem.itemCode}
                       onChange={(e) =>
                         setEditingItem({

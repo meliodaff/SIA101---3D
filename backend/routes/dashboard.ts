@@ -13,4 +13,13 @@ router.post(
   "/post-current-inventory",
   dashboardController.postCurrentInventory
 );
+router.patch(
+  "/patch-current-inventory",
+  dashboardController.patchCurrentInventory
+);
+
+router.delete(
+  "/delete-current-inventory",
+  dashboardController.deleteCurrentInventory
+);
 export default router;
