@@ -99,14 +99,7 @@ export const postCurrentInventory = (req: Request, res: Response) => {
   const { itemCode, itemName, category, quantity, status, department } =
     req.body;
   const item = req.body;
-  if (
-    !itemCode ||
-    !itemName ||
-    !category ||
-    !quantity ||
-    !status ||
-    !department
-  ) {
+  if (!itemCode || !itemName || !category || !status || !department) {
     res.status(400).json({ success: false, message: "Item Received Missing" });
     return;
   }

@@ -6,6 +6,7 @@ import ConfirmationPopup from "../components/ConfirmationPopup";
 import addIcon from "../assets/icons/add.png";
 import generateIcon from "../assets/icons/generate.png";
 import useGetDashboard from "../api/getDashboard";
+import usePostDashboard from "../api/postDashboard";
 
 // Define types for our inventory item
 interface InventoryItem {
@@ -171,10 +172,13 @@ const Dashboard: React.FC = () => {
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
       case "In Stock":
+      case "in-stock":
         return "bg-green-100 text-green-800";
+      case "low-stock":
       case "Low Stock":
         return "bg-yellow-100 text-yellow-800";
       case "Out Of Stock":
+      case "out-of-stock":
         return "bg-red-100 text-red-800";
       case "Delivered":
         return "bg-green-100 text-green-800";
@@ -205,8 +209,8 @@ const Dashboard: React.FC = () => {
     loadingForGetCurrentInventory,
     getRecentProcurement,
     getDashboardSummary,
-    postCurrentInventory,
   } = useGetDashboard();
+  const { postCurrentInventory } = usePostDashboard();
 
   type DashboardSummary = {
     title: string;
