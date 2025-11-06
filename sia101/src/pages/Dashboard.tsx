@@ -268,7 +268,7 @@ type DashboardSummary = {
                   {stat.title}
                 </h3>
                 <div className="text-2xl font-bold text-gray-800 mb-2">
-                  {stat.value}
+                  {stat.title === "Total Value" ? `P ${stat.value}` : stat.value}
                 </div>
                 <span
                   className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${

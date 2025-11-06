@@ -85,7 +85,7 @@ const dashboardSummary: DashboardSummary[] = [
   },
   {
     title: "Total Value",
-    value: 867,
+    value: 867000,
     change: "+8% from last month",
     type: "positive",
   },
